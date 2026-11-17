@@ -321,7 +321,7 @@
   function verTodo() {
     const b = limites();
     const W = svg.clientWidth || 800, H = svg.clientHeight || 600;
-    const margen = 30;
+    const margen = W < 500 ? 8 : 30;
     const k = Math.max(0.15, Math.min(2, Math.min((W - margen * 2) / b.w, (H - margen * 2 - 30) / b.h)));
     view.k = k;
     view.x = (W - b.w * k) / 2 - b.x * k;
@@ -342,7 +342,7 @@
   // En el celular el panel tapa la mitad de abajo: subir la vista si el elemento quedó oculto.
   function asegurarVisible(id) {
     const n = nodo(id);
-    if (!n || window.innerWidth > 760) return;
+    if (!n || !window.matchMedia('(max-width: 760px) and (orientation: portrait)').matches) return;
     const H = svg.clientHeight;
     const cy = (n.y + n.h / 2) * view.k + view.y;
     if (cy > H * 0.42) { view.y -= cy - H * 0.25; dibujar(); }
@@ -556,7 +556,13 @@
     dibujar();
   }, { passive: false });
 
-  window.addEventListener('resize', () => dibujar());
+  // Al girar el celular (cambia el ancho) se vuelve a encuadrar el diagrama;
+  // si solo cambia el alto (por ejemplo, al abrir el teclado) se redibuja.
+  let anchoPrevio = window.innerWidth;
+  window.addEventListener('resize', () => {
+    if (Math.abs(window.innerWidth - anchoPrevio) > 40) { anchoPrevio = window.innerWidth; verTodo(); }
+    else dibujar();
+  });
 
   // ---------- Panel de propiedades ----------
   function muestras(id, lista, actual, conSelector) {

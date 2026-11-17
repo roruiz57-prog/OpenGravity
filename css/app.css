@@ -257,16 +257,37 @@ button { font: inherit; color: inherit; }
 }
 .aviso.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-/* ---------- Teléfono: panel como hoja inferior ---------- */
-@media (max-width: 760px) {
+/* ---------- Pantallas chicas ---------- */
+.pista-corta { display: none; }
+
+@media (max-width: 760px), (max-height: 500px) {
   .btn span { display: none; }
-  .btn { min-width: 42px; padding: 8px 6px; }
   .nombre { display: none; }
+  .pista-larga { display: none; }
+  .pista-corta { display: inline; }
+}
+
+/* Celular angosto: los botones se reparten el ancho para que entren todos. */
+@media (max-width: 760px) {
+  .barra {
+    gap: 0;
+    padding-left: max(4px, env(safe-area-inset-left, 0px));
+    padding-right: max(4px, env(safe-area-inset-right, 0px));
+  }
+  .sep { display: none; }
+  .btn { flex: 1 1 0; min-width: 0; padding: 9px 0; }
+  .btn svg { width: 24px; height: 24px; }
+  .pista { font-size: 12px; }
+  .menu { min-width: 0; width: min(300px, calc(100% - 20px)); }
+}
+
+/* Celular vertical: el panel es una hoja que sube desde abajo. */
+@media (max-width: 760px) and (orientation: portrait) {
   .panel {
     position: absolute;
     left: 0; right: 0; bottom: 0;
     width: auto;
-    max-height: 52%;
+    max-height: 50%;
     border-left: 0;
     border-top: 1px solid var(--borde);
     border-radius: 16px 16px 0 0;
@@ -274,7 +295,16 @@ button { font: inherit; color: inherit; }
     padding-left: max(16px, env(safe-area-inset-left, 0px));
     z-index: 6;
   }
-  .pista { font-size: 11px; }
+}
+
+/* Celular horizontal: barra más baja y panel angosto al costado. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .barra { padding-block: 2px; }
+  .btn { padding: 5px 0; }
+  .menu { top: calc(max(2px, env(safe-area-inset-top, 0px)) + 44px); max-height: calc(100% - 54px); overflow-y: auto; }
+  .panel { width: 270px; padding: 10px 12px; gap: 8px; }
+  .panel .campo textarea { min-height: 40px; }
+  .pista { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
