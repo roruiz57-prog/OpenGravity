@@ -1,5 +1,7 @@
 # OpenGravity Diagramas
 
+> **Al empezar un chat nuevo, leer primero `RETOMAR.md`**: tiene el estado actual y las tareas pendientes.
+
 App para crear y editar diagramas con estilo de "pizarra brillante" (cajas,
 textos con brillo, flechas continuas o punteadas, marcos de grupo), pensada para
 usarse en **Android y Windows** desde una sola base de código.
