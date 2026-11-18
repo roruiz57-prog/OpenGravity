@@ -10,7 +10,9 @@ Editor de diagramas con estilo de pizarra brillante, instalable en **Android** y
 - Arrastrar, cambiar tamaño, colores, deshacer y rehacer.
 - Funciona con mouse y con el dedo (dos dedos para zoom).
 - Guarda solo en el dispositivo; también puedes guardar y abrir archivos `.json`.
-- Exporta a PNG, JPG, WebP, SVG y PDF.
+- Fondos: 8 listos para elegir (noche azul, violeta, negro, pizarra, plano técnico, blanco,
+  gris, papel cuadriculado), color liso o degradado, cuadrícula o puntos, y estrellas.
+- Exporta a PNG, JPG, WebP, SVG y PDF, con opción de fondo transparente (PNG, WebP, SVG).
 - Incluye la plantilla "Arnés del agente".
 
 ## Usarla en la PC

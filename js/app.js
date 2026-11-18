@@ -51,6 +51,48 @@
     return '';
   }
 
+  // ---------- Fondos ----------
+  const FONDOS = {
+    noche: { nombre: 'Noche azul', type: 'gradient', c1: '#1d4f96', c2: '#0a2350', stars: true, pattern: 'none' },
+    violeta: { nombre: 'Espacio violeta', type: 'gradient', c1: '#4a2a8a', c2: '#120a2e', stars: true, pattern: 'none' },
+    negro: { nombre: 'Negro', type: 'solid', c1: '#0b0d12', c2: '#0b0d12', stars: false, pattern: 'none' },
+    pizarra: { nombre: 'Pizarra verde', type: 'gradient', c1: '#2f5a46', c2: '#142a22', stars: false, pattern: 'none' },
+    plano: { nombre: 'Plano técnico', type: 'solid', c1: '#16457f', c2: '#16457f', stars: false, pattern: 'grid' },
+    blanco: { nombre: 'Blanco', type: 'solid', c1: '#ffffff', c2: '#ffffff', stars: false, pattern: 'none' },
+    gris: { nombre: 'Gris claro', type: 'solid', c1: '#e9edf3', c2: '#e9edf3', stars: false, pattern: 'none' },
+    papel: { nombre: 'Papel cuadriculado', type: 'solid', c1: '#f8fafd', c2: '#f8fafd', stars: false, pattern: 'grid' }
+  };
+  const TEXTURAS = { none: 'Ninguna', grid: 'Cuadrícula', dots: 'Puntos' };
+  const TINTA_OSCURA = '#16243f';
+
+  function luminancia(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+    if (!m) return 0;
+    const v = parseInt(m[1], 16);
+    const canal = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+    return 0.2126 * canal(v >> 16 & 255) + 0.7152 * canal(v >> 8 & 255) + 0.0722 * canal(v & 255);
+  }
+  // Color "de base" del fondo: el liso, o el de los bordes en un degradado.
+  const colorBase = () => (doc.bg.type === 'solid' ? doc.bg.c1 : doc.bg.c2);
+  function fondoClaro() {
+    const l = doc.bg.type === 'solid' ? luminancia(doc.bg.c1) : (luminancia(doc.bg.c1) + luminancia(doc.bg.c2)) / 2;
+    return l > 0.45;
+  }
+  // Color de los textos fijos (subtítulos, etiquetas, selección) según el fondo.
+  const tinta = () => (fondoClaro() ? TINTA_OSCURA : '#f2f6ff');
+
+  // Cambia el fondo; si pasa de oscuro a claro (o al revés), los elementos blancos
+  // pasan a azul oscuro (o al revés) para que se sigan viendo.
+  function cambiarFondo(mutar) {
+    const antes = fondoClaro();
+    mutar(doc.bg);
+    const ahora = fondoClaro();
+    if (antes === ahora) return;
+    const [de, a] = ahora ? ['#ffffff', TINTA_OSCURA] : [TINTA_OSCURA, '#ffffff'];
+    for (const n of doc.nodes) if (String(n.color).toLowerCase() === de) n.color = a;
+    for (const e of doc.edges) if (String(e.color).toLowerCase() === de) e.color = a;
+  }
+
   // ---------- Estado ----------
   let doc = null;
   let sel = null; // { kind: 'node' | 'edge' | 'doc', id }
@@ -72,7 +114,9 @@
   function normalizar(d) {
     const base = copia(window.PLANTILLAS.blanco);
     const out = Object.assign(base, d || {});
-    out.bg = Object.assign({ c1: '#1d4f96', c2: '#0a2350', stars: true }, out.bg || {});
+    out.bg = Object.assign({ type: 'gradient', c1: '#1d4f96', c2: '#0a2350', stars: true, pattern: 'none' }, out.bg || {});
+    if (!['gradient', 'solid'].includes(out.bg.type)) out.bg.type = 'gradient';
+    if (!TEXTURAS[out.bg.pattern]) out.bg.pattern = 'none';
     out.nodes = (Array.isArray(out.nodes) ? out.nodes : []).map((n) => {
       const m = Object.assign({
         type: 'text', x: 0, y: 0, w: 200, h: 80, title: '', subtitle: '', color: '#ffffff',
@@ -234,11 +278,12 @@
 
   // ---------- Dibujo ----------
   function defs(paraExportar) {
+    const claro = fondoClaro();
     const estrellas = [];
     let semilla = 7;
     const azar = () => (semilla = (semilla * 16807) % 2147483647) / 2147483647;
     for (let i = 0; i < 26; i++) {
-      estrellas.push(`<circle cx="${(azar() * 400).toFixed(1)}" cy="${(azar() * 400).toFixed(1)}" r="${(0.6 + azar() * 1.3).toFixed(2)}" fill="#cfe6ff" opacity="${(0.25 + azar() * 0.5).toFixed(2)}"/>`);
+      estrellas.push(`<circle cx="${(azar() * 400).toFixed(1)}" cy="${(azar() * 400).toFixed(1)}" r="${(0.6 + azar() * 1.3).toFixed(2)}" fill="${claro ? '#7d9cc7' : '#cfe6ff'}" opacity="${(0.25 + azar() * 0.5).toFixed(2)}"/>`);
     }
     return `<defs>
       <filter id="brillo" x="-40%" y="-40%" width="180%" height="180%">
@@ -250,10 +295,12 @@
         <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
       </filter>
       <radialGradient id="degradado" cx="50%" cy="45%" r="75%">
-        <stop offset="0" stop-color="${esc(doc.bg.c1)}"/><stop offset="1" stop-color="${esc(doc.bg.c2)}"/>
+        <stop offset="0" stop-color="${esc(doc.bg.c1)}"/><stop offset="1" stop-color="${esc(doc.bg.type === 'solid' ? doc.bg.c1 : doc.bg.c2)}"/>
       </radialGradient>
       <pattern id="estrellas" width="400" height="400" patternUnits="userSpaceOnUse">${estrellas.join('')}</pattern>
-      ${paraExportar ? '' : `<pattern id="puntos" width="${GRILLA * 4}" height="${GRILLA * 4}" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#ffffff" opacity=".07"/></pattern>`}
+      <pattern id="cuadricula" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="${claro ? '#8fb3e0' : '#ffffff'}" stroke-opacity="${claro ? 0.6 : 0.13}" stroke-width="1"/></pattern>
+      <pattern id="puntos-fondo" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="12" cy="12" r="1.5" fill="${claro ? '#8fb3e0' : '#ffffff'}" opacity="${claro ? 0.7 : 0.18}"/></pattern>
+      ${paraExportar ? '' : `<pattern id="puntos" width="${GRILLA * 4}" height="${GRILLA * 4}" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="${claro ? TINTA_OSCURA : '#ffffff'}" opacity="${claro ? 0.12 : 0.07}"/></pattern>`}
     </defs>`;
   }
 
@@ -274,7 +321,8 @@
       y += altT;
     }
     y += sep;
-    const colorSub = n.type === 'box' ? '#e9f3ff' : '#f2f6ff';
+    // En las formas el subtítulo va sobre el relleno; si no hay relleno, sobre el fondo.
+    const colorSub = n.type === 'box' && n.fill !== 'none' ? '#e9f3ff' : tinta();
     for (const t of sub) {
       out.push(`<text x="${cx}" y="${y + altS * 0.72}" text-anchor="middle" font-family="${FUENTE_MONO}" font-weight="700" font-size="${n.subSize}" fill="${colorSub}">${esc(t)}</text>`);
       y += altS;
@@ -331,7 +379,7 @@
       if (Math.abs(nx) > 0.5) { ancla = nx > 0 ? 'start' : 'end'; lx = m.x + nx * 12; ly = m.y + ny * 12 + 5; }
       else if (ny < 0) { ly = m.y + ny * 16; }
       else { ly = m.y + ny * 16 + 12; }
-      etiqueta = `<text x="${lx}" y="${ly}" text-anchor="${ancla}" font-family="${FUENTE_MONO}" font-weight="700" font-size="15" fill="#f2f6ff" stroke="${esc(doc.bg.c2)}" stroke-width="5" stroke-linejoin="round" paint-order="stroke">${esc(e.label)}</text>`;
+      etiqueta = `<text x="${lx}" y="${ly}" text-anchor="${ancla}" font-family="${FUENTE_MONO}" font-weight="700" font-size="15" fill="${tinta()}" stroke="${esc(colorBase())}" stroke-width="5" stroke-linejoin="round" paint-order="stroke">${esc(e.label)}</text>`;
     }
     return `<g>
       ${seleccionada ? `<path d="${trazo}" stroke="#7fe3ff" stroke-width="12" opacity=".35" stroke-linecap="round" fill="none"/>` : ''}
@@ -358,7 +406,7 @@
       const n = nodo(sel.id);
       if (n) {
         const pad = 6 / k;
-        s += `<rect x="${n.x - pad}" y="${n.y - pad}" width="${n.w + pad * 2}" height="${n.h + pad * 2}" fill="none" stroke="#ffffff" stroke-opacity=".75" stroke-width="${1.5 / k}" stroke-dasharray="${6 / k} ${4 / k}" pointer-events="none"/>`;
+        s += `<rect x="${n.x - pad}" y="${n.y - pad}" width="${n.w + pad * 2}" height="${n.h + pad * 2}" fill="none" stroke="${tinta()}" stroke-opacity=".75" stroke-width="${1.5 / k}" stroke-dasharray="${6 / k} ${4 / k}" pointer-events="none"/>`;
         const t = 16 / k;
         s += `<rect x="${n.x + n.w - t / 2}" y="${n.y + n.h - t / 2}" width="${t}" height="${t}" rx="${3 / k}" fill="#7fe3ff" stroke="#04213f" stroke-width="${1.5 / k}" data-handle="resize" data-id="${n.id}"/>`;
         const r = 13 / k, cx = n.x + n.w + 26 / k, cy = n.y + n.h / 2;
@@ -377,13 +425,21 @@
     return s;
   }
 
+  // Textura y estrellas del fondo, en coordenadas del diagrama (se mueven con él).
+  function capasFondo(x, y, w, h) {
+    const r = (relleno) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#${relleno})" pointer-events="none"/>`;
+    return (doc.bg.pattern === 'grid' ? r('cuadricula') : doc.bg.pattern === 'dots' ? r('puntos-fondo') : '') +
+      (doc.bg.stars ? r('estrellas') : '');
+  }
+  const colorFondo = () => (doc.bg.type === 'solid' ? esc(doc.bg.c1) : 'url(#degradado)');
+
   function dibujar() {
     const W = svg.clientWidth || 800, H = svg.clientHeight || 600;
     const x0 = -view.x / view.k, y0 = -view.y / view.k, ancho = W / view.k, alto = H / view.k;
     svg.innerHTML = defs(false) +
-      `<rect x="0" y="0" width="${W}" height="${H}" fill="url(#degradado)"/>` +
+      `<rect x="0" y="0" width="${W}" height="${H}" fill="${colorFondo()}"/>` +
       `<g transform="translate(${view.x} ${view.y}) scale(${view.k})">` +
-      (doc.bg.stars ? `<rect x="${x0}" y="${y0}" width="${ancho}" height="${alto}" fill="url(#estrellas)" pointer-events="none"/>` : '') +
+      capasFondo(x0, y0, ancho, alto) +
       `<rect x="${x0}" y="${y0}" width="${ancho}" height="${alto}" fill="url(#puntos)" pointer-events="none"/>` +
       contenido(false) + capaSeleccion() + '</g>';
   }
@@ -399,9 +455,10 @@
     }
     return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
   }
-  function verTodo() {
+  // `fraccion`: parte de la altura disponible (en el celular, 0.5 = la mitad de arriba, sobre el panel).
+  function verTodo(fraccion = 1) {
     const b = limites();
-    const W = svg.clientWidth || 800, H = svg.clientHeight || 600;
+    const W = svg.clientWidth || 800, H = (svg.clientHeight || 600) * fraccion;
     const margen = W < 500 ? 8 : 30;
     const k = Math.max(0.15, Math.min(2, Math.min((W - margen * 2) / b.w, (H - margen * 2 - 30) / b.h)));
     view.k = k;
@@ -675,6 +732,19 @@
     return `<div class="muestras">${botones}${selector}</div>`;
   }
 
+  // Vista previa de un fondo de la galería, con CSS.
+  function estiloMiniatura(f) {
+    const claro = (f.type === 'solid' ? luminancia(f.c1) : (luminancia(f.c1) + luminancia(f.c2)) / 2) > 0.45;
+    const capas = [];
+    const lineas = claro ? 'rgba(143,179,224,.7)' : 'rgba(255,255,255,.25)';
+    if (f.pattern === 'grid') capas.push(`linear-gradient(${lineas} 1px, transparent 1px)`, `linear-gradient(90deg, ${lineas} 1px, transparent 1px)`);
+    if (f.pattern === 'dots') capas.push(`radial-gradient(${lineas} 1px, transparent 1.5px)`);
+    if (f.stars) capas.push('radial-gradient(#cfe6ff 1px, transparent 1.5px)');
+    capas.push(f.type === 'solid' ? `linear-gradient(${f.c1}, ${f.c1})` : `radial-gradient(circle at 50% 45%, ${f.c1}, ${f.c2})`);
+    const tam = capas.map((c) => (c.includes('1px, transparent 1px') ? '10px 10px' : c.includes('1.5px') ? (f.stars && c.includes('#cfe6ff') ? '13px 11px' : '8px 8px') : '100% 100%')).join(', ');
+    return `background-image:${capas.join(', ')};background-size:${tam}`;
+  }
+
   function dibujarPanel() {
     $('#pista').hidden = !!sel;
     if (!sel) { panel.hidden = true; panel.innerHTML = ''; requestAnimationFrame(dibujar); return; }
@@ -732,11 +802,24 @@
           <button class="btn-peligro" id="p-eliminar">Eliminar</button>
         </div>`;
     } else if (sel.kind === 'doc') {
-      h += `<h2>Diagrama<button class="cerrar" id="p-cerrar" title="Cerrar">×</button></h2>
-        <div class="campo"><label for="p-nombre">Nombre</label><input type="text" id="p-nombre" value="${esc(doc.name)}"></div>
-        <div class="campo"><span>Fondo: color del centro</span>${muestras('p-c1', ['#1d4f96', '#2a2f6b', '#14324a', '#3a1d4f', '#1b1b1b', '#e9eef6'], doc.bg.c1, true)}</div>
-        <div class="campo"><span>Fondo: color de los bordes</span>${muestras('p-c2', ['#0a2350', '#11143a', '#06141f', '#170a24', '#000000', '#c9d3e3'], doc.bg.c2, true)}</div>
-        <label class="check"><input type="checkbox" id="p-estrellas" ${doc.bg.stars ? 'checked' : ''}> Estrellas en el fondo</label>`;
+      const bg = doc.bg;
+      const esActual = (f) => f.type === bg.type && f.c1 === bg.c1 && (f.type === 'solid' || f.c2 === bg.c2) && f.pattern === bg.pattern && f.stars === bg.stars;
+      const galeria = Object.entries(FONDOS).map(([k, f]) => `<button type="button" class="fondo-op${esActual(f) ? ' activa' : ''}" data-fondo="${k}">
+          <span class="mini" style="${estiloMiniatura(f)}"></span>${f.nombre}</button>`).join('');
+      const listaColores = ['#1d4f96', '#4a2a8a', '#2f5a46', '#16457f', '#0b0d12', '#ffffff', '#e9edf3', '#fdf6e3'];
+      h += `<h2>Fondo<button class="cerrar" id="p-cerrar" title="Cerrar">×</button></h2>
+        <div class="fondos">${galeria}</div>
+        <div class="fila">
+          <div class="campo" style="flex:1"><label for="p-tipofondo">Tipo</label><select id="p-tipofondo">
+            <option value="gradient" ${bg.type === 'gradient' ? 'selected' : ''}>Degradado</option>
+            <option value="solid" ${bg.type === 'solid' ? 'selected' : ''}>Color liso</option></select></div>
+          <div class="campo" style="flex:1"><label for="p-textura">Textura</label><select id="p-textura">
+            ${Object.entries(TEXTURAS).map(([k, v]) => `<option value="${k}" ${bg.pattern === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+        </div>
+        <div class="campo"><span>${bg.type === 'solid' ? 'Color' : 'Color del centro'}</span>${muestras('p-c1', listaColores, bg.c1, true)}</div>
+        ${bg.type === 'gradient' ? `<div class="campo"><span>Color de los bordes</span>${muestras('p-c2', ['#0a2350', '#120a2e', '#142a22', '#06141f', '#000000', '#c9d3e3', '#ffffff', '#efe4c6'], bg.c2, true)}</div>` : ''}
+        <label class="check"><input type="checkbox" id="p-estrellas" ${bg.stars ? 'checked' : ''}> Estrellas</label>
+        <div class="campo"><label for="p-nombre">Nombre del diagrama</label><input type="text" id="p-nombre" value="${esc(doc.name)}"></div>`;
     }
     panel.innerHTML = h;
     conectarPanel();
@@ -759,7 +842,14 @@
     enVivo('p-etiqueta', (o, el) => { o.label = el.value; });
     enVivo('p-nombre', (o, el) => { o.name = el.value; $('#nombre-doc').textContent = el.value; });
     on('p-brillo', 'change', (ev) => { objetivo().glow = ev.target.checked; confirmarCambio(); dibujar(); });
-    on('p-estrellas', 'change', (ev) => { doc.bg.stars = ev.target.checked; confirmarCambio(); dibujar(); });
+    on('p-estrellas', 'change', (ev) => { doc.bg.stars = ev.target.checked; confirmarCambio(); dibujar(); dibujarPanel(); });
+    on('p-tipofondo', 'change', (ev) => { cambiarFondo((bg) => { bg.type = ev.target.value; }); confirmarCambio(); dibujar(); dibujarPanel(); });
+    on('p-textura', 'change', (ev) => { doc.bg.pattern = ev.target.value; confirmarCambio(); dibujar(); dibujarPanel(); });
+    panel.querySelectorAll('[data-fondo]').forEach((b) => b.addEventListener('click', () => {
+      const f = FONDOS[b.dataset.fondo];
+      cambiarFondo((bg) => Object.assign(bg, { type: f.type, c1: f.c1, c2: f.c2, stars: f.stars, pattern: f.pattern }));
+      confirmarCambio(); dibujar(); dibujarPanel();
+    }));
     on('p-linea', 'change', (ev) => { objetivo().style = ev.target.value; confirmarCambio(); dibujar(); });
     on('p-forma', 'change', (ev) => { objetivo().shape = ev.target.value; confirmarCambio(); dibujar(); });
     on('p-borde', 'change', (ev) => { objetivo().border = ev.target.value; confirmarCambio(); dibujar(); });
@@ -779,8 +869,8 @@
 
     const campoColor = { 'p-color': 'color', 'p-relleno': 'fill', 'p-c1': 'c1', 'p-c2': 'c2' };
     const aplicarColor = (grupo, c) => {
-      const o = grupo === 'p-c1' || grupo === 'p-c2' ? doc.bg : objetivo();
-      o[campoColor[grupo]] = c;
+      if (grupo === 'p-c1' || grupo === 'p-c2') cambiarFondo((bg) => { bg[campoColor[grupo]] = c; });
+      else objetivo()[campoColor[grupo]] = c;
       panel.querySelectorAll(`.muestra[data-grupo="${grupo}"]`).forEach((b) => b.classList.toggle('activa', b.dataset.color === c));
       dibujar();
     };
@@ -795,15 +885,15 @@
   function nombreArchivo() {
     return (doc.name || 'diagrama').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, '-').toLowerCase() || 'diagrama';
   }
-  function svgExportable() {
+  // `transparente`: sin color, textura ni estrellas de fondo (solo los elementos).
+  function svgExportable(transparente = false) {
     const b = limites();
     const m = 50;
     const x = b.x - m, y = b.y - m, w = b.w + m * 2, h = b.h + m * 2;
     return {
       w, h,
       texto: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${w} ${h}" width="${w}" height="${h}">${defs(true)}` +
-        `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#degradado)"/>` +
-        (doc.bg.stars ? `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#estrellas)"/>` : '') +
+        (transparente ? '' : `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${colorFondo()}"/>` + capasFondo(x, y, w, h)) +
         contenido(true) + '</svg>'
     };
   }
@@ -818,9 +908,9 @@
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
   // Dibuja el diagrama en un lienzo y lo convierte al tipo de imagen pedido (PNG, JPG o WebP).
-  function generarImagen(tipo = 'image/png', calidad) {
+  function generarImagen(tipo = 'image/png', calidad, transparente = false) {
     return new Promise((resolver, rechazar) => {
-      const { w, h, texto } = svgExportable();
+      const { w, h, texto } = svgExportable(transparente);
       const escala = Math.min(3, Math.max(1, 3000 / Math.max(w, h)));
       const img = new Image();
       const url = URL.createObjectURL(new Blob([texto], { type: 'image/svg+xml' }));
@@ -829,8 +919,10 @@
         c.width = Math.round(w * escala);
         c.height = Math.round(h * escala);
         const ctx = c.getContext('2d');
-        ctx.fillStyle = doc.bg.c2; // fondo sólido por si el formato no admite transparencia
-        ctx.fillRect(0, 0, c.width, c.height);
+        if (!transparente) { // fondo sólido por si el formato no admite transparencia
+          ctx.fillStyle = colorBase();
+          ctx.fillRect(0, 0, c.width, c.height);
+        }
         ctx.drawImage(img, 0, 0, c.width, c.height);
         URL.revokeObjectURL(url);
         c.toBlob((b) => (b ? resolver({ blob: b, ancho: c.width, alto: c.height, w, h }) : rechazar(new Error('sin imagen'))), tipo, calidad);
@@ -871,8 +963,9 @@
     webp: { tipo: 'image/webp', calidad: 0.92, nombre: 'WebP' }
   };
   async function exportar(formato) {
+    const transparente = $('#exp-transparente').checked && ['png', 'webp', 'svg'].includes(formato);
     try {
-      if (formato === 'svg') return exportarSVG();
+      if (formato === 'svg') return exportarSVG(transparente);
       if (formato === 'compartir') return compartir();
       if (formato === 'pdf') {
         const r = await generarImagen('image/jpeg', 0.92);
@@ -882,15 +975,15 @@
         return avisar('PDF exportado');
       }
       const f = FORMATOS[formato];
-      const r = await generarImagen(f.tipo, f.calidad);
+      const r = await generarImagen(f.tipo, f.calidad, transparente);
       descargar(r.blob, `${nombreArchivo()}.${formato}`);
       avisar(`Imagen ${f.nombre} exportada`);
     } catch (_) {
       avisar('No se pudo exportar; prueba con otro formato');
     }
   }
-  function exportarSVG() {
-    descargar(new Blob([svgExportable().texto], { type: 'image/svg+xml' }), nombreArchivo() + '.svg');
+  function exportarSVG(transparente) {
+    descargar(new Blob([svgExportable(transparente).texto], { type: 'image/svg+xml' }), nombreArchivo() + '.svg');
     avisar('Imagen SVG exportada');
   }
   async function compartir() {
@@ -937,6 +1030,12 @@
   const cuadroExportar = $('#exportar');
   function abrirExportar() { cerrarMenu(); cerrarFormas(); cuadroExportar.hidden = false; }
   $('#exportar-cerrar').addEventListener('click', () => { cuadroExportar.hidden = true; });
+  // La casilla "Fondo transparente" se recuerda en este dispositivo.
+  const CLAVE_TRANSPARENTE = 'opengravity.exportar.transparente';
+  try { $('#exp-transparente').checked = localStorage.getItem(CLAVE_TRANSPARENTE) === '1'; } catch (_) { /* sin almacenamiento */ }
+  $('#exp-transparente').addEventListener('change', (ev) => {
+    try { localStorage.setItem(CLAVE_TRANSPARENTE, ev.target.checked ? '1' : '0'); } catch (_) { /* sin almacenamiento */ }
+  });
   cuadroExportar.addEventListener('click', (ev) => {
     if (ev.target === cuadroExportar) { cuadroExportar.hidden = true; return; }
     const b = ev.target.closest('[data-formato]');
@@ -995,10 +1094,15 @@
   });
 
   $('#b-texto').addEventListener('click', () => agregarNodo('text'));
+  $('#b-fondo').addEventListener('click', () => {
+    cerrarMenu(); cerrarFormas(); seleccionar({ kind: 'doc' });
+    // En el celular vertical el panel tapa la mitad de abajo: encuadrar el diagrama arriba.
+    if (window.matchMedia('(max-width: 760px) and (orientation: portrait)').matches) verTodo(0.5); else dibujar();
+  });
   $('#b-grupo').addEventListener('click', () => agregarNodo('group'));
   $('#b-deshacer').addEventListener('click', deshacer);
   $('#b-rehacer').addEventListener('click', rehacer);
-  $('#b-ajustar').addEventListener('click', verTodo);
+  $('#b-ajustar').addEventListener('click', () => verTodo());
   $('#b-exportar').addEventListener('click', abrirExportar);
 
   // ---------- Teclado (Windows) ----------

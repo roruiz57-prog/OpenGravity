@@ -39,7 +39,8 @@ usarse en **Android y Windows** desde una sola base de código.
 ```json
 {
   "version": 1, "name": "…",
-  "bg": { "c1": "#1d4f96", "c2": "#0a2350", "stars": true },
+  "bg": { "type": "gradient|solid", "c1": "#1d4f96", "c2": "#0a2350", "stars": true,
+          "pattern": "none|grid|dots" },
   "nodes": [{ "id": "…", "type": "box|text|group", "x": 0, "y": 0, "w": 200, "h": 80,
               "shape": "round|rect|ellipse|diamond|triangle|hexagon|parallelogram|cylinder",
               "border": "solid|dashed|dotted",
@@ -52,6 +53,9 @@ usarse en **Android y Windows** desde una sola base de código.
 `x, y` es la esquina superior izquierda. Los grupos se dibujan detrás de todo.
 Al mover un grupo se mueven también los elementos cuyo centro está dentro del marco (`contenidoDeGrupo()`).
 `type: "box"` es la "Forma" en la interfaz; `shape` solo aplica a ella. `border` aplica a formas y grupos.
+Fondo: `solid` usa solo `c1`. La galería de fondos es `FONDOS`. Con fondo claro (`fondoClaro()`),
+los textos fijos usan `tinta()`, y `cambiarFondo()` pasa los elementos blancos a azul oscuro (y al revés).
+Exportar con "Fondo transparente" (PNG, WebP, SVG) omite el fondo (`svgExportable(true)`).
 Archivos viejos con `"dashed": true` en flechas se convierten solos a `style` en `normalizar()`.
 
 ## Cómo probarla en la PC

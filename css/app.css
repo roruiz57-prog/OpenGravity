@@ -253,6 +253,34 @@ button { font: inherit; color: inherit; }
 .formas button:hover { background: var(--superficie-2); color: var(--texto); }
 .formas svg { width: 40px; height: 32px; fill: none; stroke: var(--acento); stroke-width: 1.8; stroke-linejoin: round; }
 
+/* ---------- Galería de fondos ---------- */
+.fondos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.fondo-op {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 2px 6px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: none;
+  cursor: pointer;
+  font-size: 10.5px;
+  line-height: 1.2;
+  color: var(--texto-suave);
+  text-align: center;
+  min-width: 0;
+}
+.fondo-op .mini {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-width: 100%;
+  border-radius: 7px;
+  border: 1px solid var(--borde);
+}
+.fondo-op:hover { background: var(--superficie-2); color: var(--texto); }
+.fondo-op.activa { border-color: var(--acento); color: var(--texto); }
+
 /* ---------- Exportar ---------- */
 .caja-modal h3 { margin: 0 0 12px; font-size: 16px; }
 .formatos { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
@@ -271,6 +299,8 @@ button { font: inherit; color: inherit; }
 .formatos b { min-width: 70px; color: var(--acento); font-size: 14px; }
 .formatos span { color: var(--texto-suave); font-size: 13px; }
 .formatos [hidden] { display: none; }
+.exp-transparente { flex-wrap: wrap; margin-bottom: 14px; }
+.exp-transparente small { flex-basis: 100%; padding-left: 26px; color: var(--texto-suave); font-size: 12px; }
 
 /* ---------- Modal y aviso ---------- */
 .modal {
