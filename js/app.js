@@ -486,6 +486,17 @@
     confirmarCambio();
     dibujar();
   }
+  // Elementos que están dentro de un grupo: los que tienen su centro dentro del marco.
+  // Incluye grupos anidados (y, por lo tanto, lo que estos tienen adentro).
+  function contenidoDeGrupo(g) {
+    if (!g || g.type !== 'group') return [];
+    return doc.nodes.filter((n) => {
+      if (n === g) return false;
+      const c = centro(n);
+      return c.x >= g.x && c.x <= g.x + g.w && c.y >= g.y && c.y <= g.y + g.h;
+    });
+  }
+
   function nodoEn(cx, cy, excluir) {
     for (const el of document.elementsFromPoint(cx, cy)) {
       const id = el.getAttribute && el.getAttribute('data-node');
@@ -542,7 +553,8 @@
       const dobleToque = ultimoToque.id === idNodo && ahora - ultimoToque.t > 60 && ahora - ultimoToque.t < 380;
       ultimoToque = { id: idNodo, t: ahora };
       seleccionar({ kind: 'node', id: idNodo });
-      gesto = { tipo: 'mover', id: idNodo, inicio: p, orig: { x: n.x, y: n.y }, movido: false };
+      const arrastrados = [n, ...contenidoDeGrupo(n)].map((m) => ({ id: m.id, x: m.x, y: m.y }));
+      gesto = { tipo: 'mover', id: idNodo, inicio: p, orig: { x: n.x, y: n.y }, arrastrados, movido: false };
       if (dobleToque) setTimeout(() => { const i = $('#p-titulo'); if (i) { i.focus(); i.select(); } }, 30);
     } else if (idArista) {
       seleccionar({ kind: 'edge', id: idArista });
@@ -585,8 +597,12 @@
       const dx = p.x - gesto.inicio.x, dy = p.y - gesto.inicio.y;
       if (!gesto.movido && Math.hypot(dx, dy) * view.k < 4) return;
       gesto.movido = true;
-      n.x = ajustar(gesto.orig.x + dx);
-      n.y = ajustar(gesto.orig.y + dy);
+      // El elemento principal se ajusta a la grilla y los de adentro se mueven exactamente lo mismo.
+      const mx = ajustar(gesto.orig.x + dx) - gesto.orig.x, my = ajustar(gesto.orig.y + dy) - gesto.orig.y;
+      for (const a of gesto.arrastrados) {
+        const m = nodo(a.id);
+        if (m) { m.x = a.x + mx; m.y = a.y + my; }
+      }
       dibujar();
     } else if (gesto.tipo === 'redimensionar') {
       const n = nodo(gesto.id);
@@ -998,10 +1014,9 @@
     else if (!escribiendo && sel && sel.kind === 'node' && ev.key.startsWith('Arrow')) {
       ev.preventDefault();
       const n = nodo(sel.id), paso = ev.shiftKey ? GRILLA * 5 : GRILLA;
-      if (ev.key === 'ArrowLeft') n.x -= paso;
-      if (ev.key === 'ArrowRight') n.x += paso;
-      if (ev.key === 'ArrowUp') n.y -= paso;
-      if (ev.key === 'ArrowDown') n.y += paso;
+      const dx = ev.key === 'ArrowLeft' ? -paso : ev.key === 'ArrowRight' ? paso : 0;
+      const dy = ev.key === 'ArrowUp' ? -paso : ev.key === 'ArrowDown' ? paso : 0;
+      for (const m of [n, ...contenidoDeGrupo(n)]) { m.x += dx; m.y += dy; }
       confirmarCambio();
       dibujar();
     }

@@ -50,6 +50,7 @@ usarse en **Android y Windows** desde una sola base de código.
 }
 ```
 `x, y` es la esquina superior izquierda. Los grupos se dibujan detrás de todo.
+Al mover un grupo se mueven también los elementos cuyo centro está dentro del marco (`contenidoDeGrupo()`).
 `type: "box"` es la "Forma" en la interfaz; `shape` solo aplica a ella. `border` aplica a formas y grupos.
 Archivos viejos con `"dashed": true` en flechas se convierten solos a `style` en `normalizar()`.
 
