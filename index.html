@@ -26,7 +26,7 @@
   <span class="sep"></span>
   <button id="b-ajustar" class="btn" title="Ver todo el diagrama"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span>Ver todo</span></button>
   <button id="b-exportar" class="btn" title="Exportar (PNG, JPG, PDF…)"><svg viewBox="0 0 24 24"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg><span>Exportar</span></button>
-  <span class="nombre" id="nombre-doc"></span>
+  <button type="button" class="nombre" id="nombre-doc" title="Mis diagramas"></button>
 </header>
 
 <main class="area">
@@ -36,8 +36,10 @@
 </main>
 
 <div class="menu" id="menu" hidden>
+  <button data-accion="biblioteca"><b>Mis diagramas</b></button>
+  <hr>
   <button data-accion="nuevo">Nuevo diagrama en blanco</button>
-  <button data-accion="plantilla">Plantilla: Arnés del agente</button>
+  <button data-accion="plantilla">Nuevo desde plantilla (Arnés)</button>
   <hr>
   <button data-accion="abrir">Abrir archivo…</button>
   <button data-accion="guardar">Guardar archivo (.json)</button>
@@ -48,6 +50,22 @@
 </div>
 
 <div class="formas" id="formas" hidden role="menu" aria-label="Elegir forma"></div>
+
+<section class="biblioteca" id="biblioteca" hidden aria-label="Mis diagramas">
+  <div class="bib-interior">
+    <div class="bib-cabecera">
+      <div><h2>Mis diagramas</h2><span class="bib-cuenta" id="bib-cuenta"></span></div>
+      <button type="button" id="bib-cerrar" class="btn-sec">Cerrar</button>
+    </div>
+    <div class="bib-acciones">
+      <button type="button" class="btn-pri" data-bib="nuevo">+ Nuevo en blanco</button>
+      <button type="button" class="btn-sec" data-bib="plantilla">+ Desde plantilla (Arnés)</button>
+      <button type="button" class="btn-sec" data-bib="importar">Abrir archivo…</button>
+    </div>
+    <p class="bib-nota">Se guardan solos en este dispositivo. Para pasar un diagrama a otro dispositivo, ábrelo y usa Menú → Guardar archivo.</p>
+    <div class="bib-lista" id="bib-lista"></div>
+  </div>
+</section>
 
 <div class="modal" id="exportar" hidden>
   <div class="caja-modal">
@@ -68,6 +86,7 @@
 <div class="modal" id="modal" hidden>
   <div class="caja-modal">
     <p id="modal-texto"></p>
+    <input type="text" id="modal-entrada" class="modal-entrada" hidden aria-label="Texto">
     <div class="acciones">
       <button id="modal-no" class="btn-sec">Cancelar</button>
       <button id="modal-si" class="btn-pri">Continuar</button>

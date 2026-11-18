@@ -209,7 +209,7 @@ button { font: inherit; color: inherit; }
   display: flex;
   flex-direction: column;
 }
-.menu[hidden], .modal[hidden], .panel[hidden], .pista[hidden], .formas[hidden] { display: none; }
+.menu[hidden], .modal[hidden], .panel[hidden], .pista[hidden], .formas[hidden], .biblioteca[hidden], .tarjeta-menu[hidden], .modal-entrada[hidden] { display: none; }
 .menu button {
   text-align: left;
   padding: 10px 12px;
@@ -252,6 +252,107 @@ button { font: inherit; color: inherit; }
 }
 .formas button:hover { background: var(--superficie-2); color: var(--texto); }
 .formas svg { width: 40px; height: 32px; fill: none; stroke: var(--acento); stroke-width: 1.8; stroke-linejoin: round; }
+
+/* ---------- Mis diagramas ---------- */
+.nombre { background: none; border: 0; cursor: pointer; text-align: right; }
+.nombre:hover { color: var(--texto); text-decoration: underline; }
+.biblioteca {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  background: var(--fondo);
+  overflow-y: auto;
+  padding-top: max(16px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.bib-interior { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+.bib-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.bib-cabecera h2 { margin: 0; font-size: 22px; }
+.bib-cuenta { color: var(--texto-suave); font-size: 13px; }
+.bib-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.bib-nota { margin: 0; color: var(--texto-suave); font-size: 13px; }
+.bib-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.tarjeta {
+  position: relative;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  min-width: 0;
+}
+.tarjeta.actual { border-color: var(--acento); box-shadow: 0 0 0 1px var(--acento); }
+.tarjeta-abrir {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 8px 8px 10px;
+  background: none;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 12px;
+}
+.tarjeta-abrir:hover { background: var(--superficie-2); }
+.tarjeta-mini {
+  display: block;
+  aspect-ratio: 4 / 3;
+  max-width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--fondo);
+  margin-bottom: 4px;
+}
+.tarjeta-mini img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.tarjeta-nombre {
+  font-weight: 600;
+  padding-right: 30px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tarjeta-fecha { font-size: 12px; color: var(--texto-suave); }
+.tarjeta-mas {
+  position: absolute;
+  right: 6px;
+  bottom: 18px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--borde);
+  background: var(--superficie-2);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+.tarjeta-menu {
+  position: absolute;
+  right: 6px;
+  bottom: 54px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 4px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .45);
+}
+.tarjeta-menu button { text-align: left; padding: 9px 12px; border: 0; border-radius: 6px; background: none; cursor: pointer; }
+.tarjeta-menu button:hover { background: var(--superficie-2); }
+.tarjeta-menu .peligro { color: var(--peligro); }
+.modal-entrada {
+  width: 100%;
+  margin: -4px 0 16px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--borde);
+  background: var(--fondo);
+  color: var(--texto);
+  font: 15px var(--fuente-ui);
+}
 
 /* ---------- Galería de fondos ---------- */
 .fondos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
@@ -361,6 +462,8 @@ button { font: inherit; color: inherit; }
   .pista { font-size: 12px; }
   .menu { min-width: 0; width: min(300px, calc(100% - 20px)); }
   .formas { left: max(10px, env(safe-area-inset-left, 0px)); }
+  .bib-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .bib-acciones button { flex: 1 1 auto; }
 }
 
 /* Celular vertical: el panel es una hoja que sube desde abajo. */

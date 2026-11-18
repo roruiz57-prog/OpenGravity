@@ -56,6 +56,10 @@ Al mover un grupo se mueven también los elementos cuyo centro está dentro del 
 Fondo: `solid` usa solo `c1`. La galería de fondos es `FONDOS`. Con fondo claro (`fondoClaro()`),
 los textos fijos usan `tinta()`, y `cambiarFondo()` pasa los elementos blancos a azul oscuro (y al revés).
 Exportar con "Fondo transparente" (PNG, WebP, SVG) omite el fondo (`svgExportable(true)`).
+**Mis diagramas** (varios diagramas por dispositivo, en localStorage): índice `opengravity.biblioteca.v1`
+(`[{id, name, updated}]`), cada diagrama en `opengravity.diagrama.<id>`, el abierto en `opengravity.abierto`.
+`iniciarBiblioteca()` migra la clave vieja `opengravity.diagrama.actual.v1`. Deshacer es por diagrama.
+No se sincroniza entre dispositivos: para pasar uno se usa Guardar/Abrir archivo.
 Archivos viejos con `"dashed": true` en flechas se convierten solos a `style` en `normalizar()`.
 
 ## Cómo probarla en la PC

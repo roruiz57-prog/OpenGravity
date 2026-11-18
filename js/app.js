@@ -5,7 +5,10 @@
   const $ = (s) => document.querySelector(s);
   const svg = $('#lienzo');
   const panel = $('#panel');
-  const CLAVE_GUARDADO = 'opengravity.diagrama.actual.v1';
+  const CLAVE_GUARDADO = 'opengravity.diagrama.actual.v1'; // versión vieja: un solo diagrama (se migra)
+  const CLAVE_INDICE = 'opengravity.biblioteca.v1';
+  const CLAVE_ABIERTO = 'opengravity.abierto';
+  const PREFIJO_DIAGRAMA = 'opengravity.diagrama.';
   const GRILLA = 10;
 
   const COLORES = ['#ffffff', '#7fe3ff', '#4fb3ff', '#ff6b9a', '#ffb454', '#ffe36e', '#7dffb2', '#c9a2ff'];
@@ -170,27 +173,126 @@
     dibujarPanel();
     actualizarBotones();
   }
-  function cargarDoc(d, { reiniciarHistorial = true } = {}) {
+  // Carga un diagrama en el editor. `id`: cuál de "Mis diagramas" es; `guardar: false` para solo abrirlo.
+  function cargarDoc(d, { reiniciarHistorial = true, id = null, guardar = true } = {}) {
     doc = normalizar(d);
+    if (id) abiertoId = id;
     if (reiniciarHistorial) { pasado = []; futuro = []; presente = JSON.stringify(doc); }
     else confirmarCambio();
     sel = null;
-    guardarLocal();
+    if (guardar) guardarLocal();
+    lsSet(CLAVE_ABIERTO, abiertoId);
     dibujar();
     dibujarPanel();
     verTodo();
     actualizarBotones();
   }
-  function guardarLocal() {
-    try { localStorage.setItem(CLAVE_GUARDADO, JSON.stringify(doc)); } catch (_) { /* sin almacenamiento */ }
+
+  // ---------- Mis diagramas (guardados en este dispositivo) ----------
+  // Índice: [{ id, name, updated }] en CLAVE_INDICE; cada diagrama en PREFIJO_DIAGRAMA + id.
+  let abiertoId = null;
+  let yaAvisoEspacio = false;
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }
+  function lsDel(k) { try { localStorage.removeItem(k); } catch (_) { /* nada */ } }
+  function lsSet(k, v) {
+    try { localStorage.setItem(k, v); yaAvisoEspacio = false; return true; } catch (_) {
+      if (!yaAvisoEspacio) { yaAvisoEspacio = true; avisar('No hay espacio para guardar: borra diagramas viejos o guárdalos en archivo'); }
+      return false;
+    }
   }
-  function leerLocal() {
-    try {
-      const s = localStorage.getItem(CLAVE_GUARDADO);
-      if (!s) return null;
-      const d = JSON.parse(s);
-      return d && Array.isArray(d.nodes) ? d : null;
-    } catch (_) { return null; }
+  function leerIndice() {
+    try { const a = JSON.parse(lsGet(CLAVE_INDICE) || '[]'); return Array.isArray(a) ? a.filter((x) => x && x.id) : []; } catch (_) { return []; }
+  }
+  const guardarIndice = (ind) => lsSet(CLAVE_INDICE, JSON.stringify(ind));
+  function leerDiagrama(id) {
+    try { const d = JSON.parse(lsGet(PREFIJO_DIAGRAMA + id)); return d && Array.isArray(d.nodes) ? d : null; } catch (_) { return null; }
+  }
+  // Guarda el diagrama abierto y actualiza su nombre y fecha en la lista.
+  function guardarLocal() {
+    if (!abiertoId || !lsSet(PREFIJO_DIAGRAMA + abiertoId, JSON.stringify(doc))) return;
+    const ind = leerIndice();
+    const datos = { id: abiertoId, name: doc.name || 'Sin nombre', updated: Date.now() };
+    const e = ind.find((x) => x.id === abiertoId);
+    if (e) Object.assign(e, datos); else ind.unshift(datos);
+    guardarIndice(ind);
+  }
+  function nombreLibre(base) {
+    const usados = new Set(leerIndice().map((x) => x.name));
+    if (!usados.has(base)) return base;
+    for (let i = 2; ; i++) if (!usados.has(`${base} (${i})`)) return `${base} (${i})`;
+  }
+  // Crea un diagrama nuevo en la lista y lo abre.
+  function crearDiagrama(d) {
+    const nuevo = normalizar(copia(d));
+    nuevo.name = nombreLibre(nuevo.name || 'Diagrama nuevo');
+    cargarDoc(nuevo, { id: uid('d') });
+  }
+  function abrirDiagrama(id) {
+    if (id === abiertoId) return;
+    const d = leerDiagrama(id);
+    if (!d) return avisar('No se pudo abrir ese diagrama');
+    cargarDoc(d, { id, guardar: false });
+  }
+  function duplicarDiagrama(id) {
+    const d = id === abiertoId ? copia(doc) : leerDiagrama(id);
+    if (!d) return;
+    d.name = nombreLibre(`${d.name || 'Diagrama'} (copia)`);
+    const nuevoId = uid('d');
+    if (!lsSet(PREFIJO_DIAGRAMA + nuevoId, JSON.stringify(d))) return;
+    const ind = leerIndice();
+    ind.splice(Math.max(0, ind.findIndex((x) => x.id === id)) + 1, 0, { id: nuevoId, name: d.name, updated: Date.now() });
+    guardarIndice(ind);
+  }
+  function renombrarDiagrama(id, nombre) {
+    nombre = nombre.trim() || 'Sin nombre';
+    if (id === abiertoId) { doc.name = nombre; confirmarCambio(); return; }
+    const d = leerDiagrama(id);
+    if (!d) return;
+    d.name = nombre;
+    if (!lsSet(PREFIJO_DIAGRAMA + id, JSON.stringify(d))) return;
+    const ind = leerIndice();
+    const e = ind.find((x) => x.id === id);
+    if (e) { e.name = nombre; e.updated = Date.now(); }
+    guardarIndice(ind);
+  }
+  function borrarDiagrama(id) {
+    lsDel(PREFIJO_DIAGRAMA + id);
+    const ind = leerIndice().filter((x) => x.id !== id);
+    guardarIndice(ind);
+    if (id !== abiertoId) return;
+    const siguiente = [...ind].sort((a, b) => b.updated - a.updated).find((x) => leerDiagrama(x.id));
+    if (siguiente) cargarDoc(leerDiagrama(siguiente.id), { id: siguiente.id, guardar: false });
+    else crearDiagrama(window.PLANTILLAS.blanco);
+  }
+  // Al iniciar: migra el diagrama de la versión anterior y abre el último usado.
+  function iniciarBiblioteca() {
+    const vieja = lsGet(CLAVE_GUARDADO);
+    if (vieja) {
+      try {
+        const d = JSON.parse(vieja);
+        if (d && Array.isArray(d.nodes)) {
+          const id = uid('d');
+          if (lsSet(PREFIJO_DIAGRAMA + id, vieja)) {
+            const ind = leerIndice();
+            ind.unshift({ id, name: d.name || 'Diagrama', updated: Date.now() });
+            if (guardarIndice(ind)) { lsDel(CLAVE_GUARDADO); lsSet(CLAVE_ABIERTO, id); }
+          }
+        }
+      } catch (_) { /* archivo viejo dañado: se ignora */ }
+    }
+    const ind = leerIndice();
+    let id = lsGet(CLAVE_ABIERTO);
+    let d = id && ind.some((x) => x.id === id) ? leerDiagrama(id) : null;
+    if (!d) {
+      const reciente = [...ind].sort((a, b) => b.updated - a.updated).find((x) => leerDiagrama(x.id));
+      if (reciente) { id = reciente.id; d = leerDiagrama(id); }
+    }
+    abiertoId = d ? id : uid('d');
+    doc = normalizar(d || copia(window.PLANTILLAS.arnes));
+    presente = JSON.stringify(doc);
+    if (!d) guardarLocal();
+    lsSet(CLAVE_ABIERTO, abiertoId);
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (_) { /* opcional */ }
   }
   function actualizarBotones() {
     $('#b-deshacer').disabled = !pasado.length;
@@ -1005,8 +1107,10 @@
     try {
       const d = JSON.parse(await f.text());
       if (!d || !Array.isArray(d.nodes)) throw new Error('formato');
-      cargarDoc(d, { reiniciarHistorial: false });
-      avisar('Diagrama abierto');
+      if (!d.name) d.name = f.name.replace(/\.diagrama\.json$|\.json$/i, '');
+      crearDiagrama(d);
+      cerrarBiblioteca();
+      avisar('Diagrama agregado a Mis diagramas');
     } catch (_) {
       avisar('Ese archivo no es un diagrama de esta app');
     }
@@ -1060,14 +1164,26 @@
     if (!selectorFormas.hidden && !selectorFormas.contains(ev.target) && !$('#b-forma').contains(ev.target)) cerrarFormas();
   });
 
-  function preguntar(texto) {
+  // Confirmación dentro de la app. Con `entrada` pide un texto y devuelve lo escrito (o null).
+  function preguntar(texto, { si = 'Continuar', entrada = null, peligro = false } = {}) {
     return new Promise((resolver) => {
       const m = $('#modal');
+      const campo = $('#modal-entrada');
       $('#modal-texto').textContent = texto;
+      $('#modal-si').textContent = si;
+      $('#modal-si').className = peligro ? 'btn-peligro' : 'btn-pri';
+      campo.hidden = entrada === null;
+      if (entrada !== null) campo.value = entrada;
       m.hidden = false;
-      const fin = (v) => { m.hidden = true; $('#modal-si').onclick = $('#modal-no').onclick = null; resolver(v); };
+      if (entrada !== null) setTimeout(() => { campo.focus(); campo.select(); }, 30);
+      const fin = (v) => {
+        m.hidden = true;
+        $('#modal-si').onclick = $('#modal-no').onclick = campo.onkeydown = null;
+        resolver(v && entrada !== null ? campo.value : v);
+      };
       $('#modal-si').onclick = () => fin(true);
-      $('#modal-no').onclick = () => fin(false);
+      $('#modal-no').onclick = () => fin(entrada !== null ? null : false);
+      campo.onkeydown = (ev) => { if (ev.key === 'Enter') fin(true); };
     });
   }
   let temporizador = 0;
@@ -1084,10 +1200,10 @@
     if (!b) return;
     cerrarMenu();
     const accion = b.dataset.accion;
-    if (accion === 'nuevo' || accion === 'plantilla') {
-      const ok = await preguntar('Se reemplazará el diagrama actual. Puedes volver atrás con Deshacer. ¿Continuar?');
-      if (ok) cargarDoc(copia(window.PLANTILLAS[accion === 'nuevo' ? 'blanco' : 'arnes']), { reiniciarHistorial: false });
-    } else if (accion === 'abrir') $('#archivo').click();
+    if (accion === 'biblioteca') abrirBiblioteca();
+    else if (accion === 'nuevo') { crearDiagrama(window.PLANTILLAS.blanco); avisar('Diagrama nuevo creado'); }
+    else if (accion === 'plantilla') { crearDiagrama(window.PLANTILLAS.arnes); avisar('Diagrama nuevo desde la plantilla'); }
+    else if (accion === 'abrir') $('#archivo').click();
     else if (accion === 'guardar') guardarArchivo();
     else if (accion === 'exportar') abrirExportar();
     else if (accion === 'fondo') { seleccionar({ kind: 'doc' }); dibujar(); }
@@ -1105,6 +1221,80 @@
   $('#b-ajustar').addEventListener('click', () => verTodo());
   $('#b-exportar').addEventListener('click', abrirExportar);
 
+  // ---------- Pantalla "Mis diagramas" ----------
+  const biblioteca = $('#biblioteca');
+  function haceCuanto(ts) {
+    const min = Math.round((Date.now() - (ts || 0)) / 60000);
+    if (min < 1) return 'hace un momento';
+    if (min < 60) return `hace ${min} min`;
+    const h = Math.round(min / 60);
+    if (h < 24) return `hace ${h} h`;
+    const dias = Math.round(h / 24);
+    if (dias < 7) return dias === 1 ? 'ayer' : `hace ${dias} días`;
+    return new Date(ts).toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  // Dibuja otro diagrama un momento (para su miniatura) sin tocar el que está abierto.
+  function conDoc(d, fn) {
+    const doc0 = doc, sel0 = sel;
+    try { doc = normalizar(d); sel = null; return fn(); } finally { doc = doc0; sel = sel0; }
+  }
+  function miniatura(d) {
+    try { return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(conDoc(d, () => svgExportable().texto)); } catch (_) { return ''; }
+  }
+  function dibujarBiblioteca() {
+    const ind = [...leerIndice()].sort((a, b) => (b.id === abiertoId) - (a.id === abiertoId) || b.updated - a.updated);
+    $('#bib-lista').innerHTML = ind.map((x) => {
+      const d = x.id === abiertoId ? doc : leerDiagrama(x.id);
+      const src = d ? miniatura(d) : '';
+      return `<div class="tarjeta${x.id === abiertoId ? ' actual' : ''}">
+        <button type="button" class="tarjeta-abrir" data-abrir="${esc(x.id)}">
+          <span class="tarjeta-mini">${src ? `<img alt="" src="${src}">` : ''}</span>
+          <span class="tarjeta-nombre">${esc(x.name)}</span>
+          <span class="tarjeta-fecha">${x.id === abiertoId ? 'Abierto ahora · ' : ''}${haceCuanto(x.updated)}</span>
+        </button>
+        <button type="button" class="tarjeta-mas" data-mas="${esc(x.id)}" aria-label="Opciones de ${esc(x.name)}">⋯</button>
+        <div class="tarjeta-menu" hidden>
+          <button type="button" data-renombrar="${esc(x.id)}">Renombrar</button>
+          <button type="button" data-duplicar="${esc(x.id)}">Duplicar</button>
+          <button type="button" data-borrar="${esc(x.id)}" class="peligro">Borrar</button>
+        </div>
+      </div>`;
+    }).join('');
+    $('#bib-cuenta').textContent = ind.length === 1 ? '1 diagrama' : `${ind.length} diagramas`;
+  }
+  function abrirBiblioteca() {
+    cerrarMenu(); cerrarFormas(); cuadroExportar.hidden = true;
+    seleccionar(null);
+    dibujarBiblioteca();
+    biblioteca.hidden = false;
+  }
+  function cerrarBiblioteca() { biblioteca.hidden = true; dibujar(); }
+  $('#bib-cerrar').addEventListener('click', cerrarBiblioteca);
+  $('#nombre-doc').addEventListener('click', abrirBiblioteca);
+  biblioteca.addEventListener('click', async (ev) => {
+    const b = ev.target.closest('button');
+    // Tocar fuera de un menú ⋯ abierto lo cierra.
+    biblioteca.querySelectorAll('.tarjeta-menu').forEach((m) => { if (!b || !b.dataset.mas || m.previousElementSibling !== b) m.hidden = true; });
+    if (!b) return;
+    const d = b.dataset;
+    if (d.bib === 'nuevo') { crearDiagrama(window.PLANTILLAS.blanco); cerrarBiblioteca(); }
+    else if (d.bib === 'plantilla') { crearDiagrama(window.PLANTILLAS.arnes); cerrarBiblioteca(); }
+    else if (d.bib === 'importar') $('#archivo').click();
+    else if (d.abrir) { abrirDiagrama(d.abrir); cerrarBiblioteca(); }
+    else if (d.mas) { const m = b.nextElementSibling; m.hidden = !m.hidden; }
+    else if (d.renombrar) {
+      const actual = (leerIndice().find((x) => x.id === d.renombrar) || {}).name || '';
+      const nombre = await preguntar('Nuevo nombre del diagrama', { si: 'Guardar', entrada: actual });
+      if (nombre !== null) { renombrarDiagrama(d.renombrar, nombre); actualizarBotones(); dibujarBiblioteca(); }
+    } else if (d.duplicar) { duplicarDiagrama(d.duplicar); dibujarBiblioteca(); avisar('Diagrama duplicado'); }
+    else if (d.borrar) {
+      const nombre = (leerIndice().find((x) => x.id === d.borrar) || {}).name || 'este diagrama';
+      if (await preguntar(`¿Borrar "${nombre}"? No se puede deshacer.`, { si: 'Borrar', peligro: true })) {
+        borrarDiagrama(d.borrar); dibujarBiblioteca(); avisar('Diagrama borrado');
+      }
+    }
+  });
+
   // ---------- Teclado (Windows) ----------
   document.addEventListener('keydown', (ev) => {
     const escribiendo = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement && document.activeElement.tagName);
@@ -1114,7 +1304,7 @@
     else if (ctrl && ev.key.toLowerCase() === 's') { ev.preventDefault(); guardarArchivo(); }
     else if (ctrl && ev.key.toLowerCase() === 'd' && !escribiendo) { ev.preventDefault(); duplicarSeleccion(); }
     else if ((ev.key === 'Delete' || ev.key === 'Backspace') && !escribiendo) { ev.preventDefault(); eliminarSeleccion(); }
-    else if (ev.key === 'Escape') { if (escribiendo) document.activeElement.blur(); cerrarMenu(); cerrarFormas(); cuadroExportar.hidden = true; seleccionar(null); dibujar(); }
+    else if (ev.key === 'Escape') { if (escribiendo) document.activeElement.blur(); cerrarMenu(); cerrarFormas(); cuadroExportar.hidden = true; if (!biblioteca.hidden) cerrarBiblioteca(); seleccionar(null); dibujar(); }
     else if (!escribiendo && sel && sel.kind === 'node' && ev.key.startsWith('Arrow')) {
       ev.preventDefault();
       const n = nodo(sel.id), paso = ev.shiftKey ? GRILLA * 5 : GRILLA;
@@ -1127,8 +1317,7 @@
   });
 
   // ---------- Inicio ----------
-  doc = normalizar(leerLocal() || copia(window.PLANTILLAS.arnes));
-  presente = JSON.stringify(doc);
+  iniciarBiblioteca();
   actualizarBotones();
   requestAnimationFrame(() => { verTodo(); dibujarPanel(); });
 
@@ -1138,5 +1327,5 @@
   }
 
   // Para pruebas automáticas.
-  window.__diagramas = { get doc() { return doc; }, view, verTodo, cargarDoc };
+  window.__diagramas = { get doc() { return doc; }, get abiertoId() { return abiertoId; }, view, verTodo, cargarDoc, leerIndice };
 })();
