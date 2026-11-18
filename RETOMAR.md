@@ -15,25 +15,21 @@
 | Proyecto en Vercel | `opengravity` en la cuenta personal "roruiz57-5623's projects" (plan Hobby, gratis) |
 | Copia de la v1 | Google Drive → carpeta **OpenGravity** (zip de la primera versión, CLAUDE.md, README.md, vista previa). Está desactualizada. |
 
-## 2. Qué ya funciona (publicado en `main` y probado en el celular del usuario)
+## 2. Qué ya funciona (publicado en `main`)
 - Editor de diagramas PWA, instalable en Android y Windows, con modo sin conexión.
 - Formas: 8 figuras, más texto con brillo y grupos. Bordes continuos, con rayas o con puntos. Flechas con etiqueta.
 - Mover un grupo arrastra lo que tiene adentro.
 - Fondos: galería de 8, color liso o degradado, textura y estrellas.
 - Exportar a PNG, JPG, WebP, SVG y PDF, con opción de fondo transparente.
 - **Mis diagramas**: varios diagramas guardados en el dispositivo.
+- **Generar con IA** (Gemini / OpenRouter), solo probado con respuestas simuladas: ver tarea 3.2.
 - Adaptada a pantallas de celular, en vertical y en horizontal.
 
 ## 3. Tareas pendientes (en orden)
 
-### 3.1 Publicar "Generar con IA" — ESPERA AUTORIZACIÓN DEL USUARIO
-- El commit `a50159f` ("Generar diagramas con IA") está en la rama de trabajo, **pero NO en `main`**.
-  `main` está en `396283f`.
-- **Pedir autorización antes de copiarlo a `main`.** Cuando la den, es un avance directo:
-  `git push origin a50159f:main`.
-- Después, comprobar en Vercel que la publicación de producción quede en READY y que
-  `https://opengravity-seven.vercel.app/sw.js` diga `diagramas-v7`. Avisar al usuario que cierre y abra
-  la app dos veces en el celular.
+### 3.1 Publicar "Generar con IA" — HECHO (18/11/2026)
+- Copiado a `main` con autorización del usuario. Vercel publica `diagramas-v7`.
+- Falta que el usuario lo pruebe en su celular: cerrar y abrir la app dos veces.
 
 ### 3.2 Probar la IA con claves reales
 - Hasta ahora solo se probó **simulando** las respuestas de Google y OpenRouter. Nunca se hizo una llamada real.
