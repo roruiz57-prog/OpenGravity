@@ -40,6 +40,9 @@ usarse en **Android y Windows** desde una sola base de código.
   reintento si la respuesta no es JSON y proveedor de respaldo. No toca la pantalla.
 - `js/plantillas.js` — plantillas (`arnes` = diagrama "Arnés del agente", `blanco`).
 - `manifest.webmanifest`, `sw.js`, `icons/` — instalación y modo sin conexión.
+- **APK de Android (Capacitor)**: `package.json`, `capacitor.config.json`, `android/`, `scripts/preparar-www.mjs`
+  y `.github/workflows/apk.yml`. La llave de firma vive SOLO en los secretos de GitHub (`ANDROID_*`), nunca en el repo.
+  `.vercelignore` deja fuera de Vercel todo lo del APK.
   Al cambiar archivos de la app, subir la versión de `CACHE` en `sw.js`.
 
 ## Formato del diagrama (`doc`)

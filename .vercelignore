@@ -1,0 +1,11 @@
+# Vercel publica solo la app web. Lo del APK de Android no se publica.
+android/
+scripts/
+www/
+node_modules/
+.github/
+capacitor.config.json
+package.json
+package-lock.json
+RETOMAR.md
+CLAUDE.md

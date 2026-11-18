@@ -1,3 +1,8 @@
 node_modules/
 .DS_Store
 Thumbs.db
+# Archivos generados para el APK (se rearman con: npm run android:sync)
+www/
+# Nunca subir llaves de firma
+*.jks
+*.keystore

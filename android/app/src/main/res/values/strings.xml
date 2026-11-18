@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">OpenGravity Diagramas</string>
+    <string name="title_activity_main">OpenGravity Diagramas</string>
+    <string name="package_name">app.opengravity.diagramas</string>
+    <string name="custom_url_scheme">app.opengravity.diagramas</string>
+</resources>

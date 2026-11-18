@@ -1,0 +1,8 @@
+{
+  "appId": "app.opengravity.diagramas",
+  "appName": "OpenGravity Diagramas",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#0a2350"
+  }
+}

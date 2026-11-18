@@ -1,0 +1,90 @@
+# Arma el APK de Android firmado y lo publica en GitHub → Releases.
+# La llave de firma vive SOLO en los "secretos" del repositorio (Settings → Secrets and variables → Actions).
+# Mientras se arma el APK se escribe en un archivo temporal del servidor de GitHub y se borra al terminar.
+name: APK de Android
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # solo para crear el Release con el APK
+
+concurrency:
+  group: apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Comprobar que la llave de firma esté cargada
+        id: llave
+        env:
+          K1: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          K2: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          K3: ${{ secrets.ANDROID_KEY_ALIAS }}
+          K4: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$K1" ] && [ -n "$K2" ] && [ -n "$K3" ] && [ -n "$K4" ]; then
+            echo "lista=si" >> "$GITHUB_OUTPUT"
+          else
+            echo "lista=no" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Falta la llave de firma::No se armó el APK porque faltan los secretos ANDROID_*. Ver RETOMAR.md, sección del APK."
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.llave.outputs.lista == 'si'
+
+      - uses: actions/setup-java@v4
+        if: steps.llave.outputs.lista == 'si'
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: actions/setup-node@v4
+        if: steps.llave.outputs.lista == 'si'
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Preparar la app para Android
+        if: steps.llave.outputs.lista == 'si'
+        run: |
+          npm ci
+          npm run android:sync
+
+      - name: Armar el APK firmado
+        if: steps.llave.outputs.lista == 'si'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          export ANDROID_KEYSTORE_FILE="$RUNNER_TEMP/opengravity.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$ANDROID_KEYSTORE_FILE"
+          export VERSION_APP="1.0.${GITHUB_RUN_NUMBER}"
+          cd android
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease
+
+      - name: Borrar la llave temporal
+        if: always()
+        run: rm -f "$RUNNER_TEMP/opengravity.jks"
+
+      - name: Publicar el APK en Releases
+        if: steps.llave.outputs.lista == 'si'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          test -f "$APK" || { echo "::error::No se generó un APK firmado"; exit 1; }
+          cp "$APK" OpenGravity.apk
+          ETIQUETA="v$(date -u +%Y%m%d)-${GITHUB_RUN_NUMBER}"
+          gh release create "$ETIQUETA" OpenGravity.apk \
+            --title "OpenGravity Diagramas 1.0.${GITHUB_RUN_NUMBER}" \
+            --notes "APK de Android armado desde el commit ${GITHUB_SHA::7}. Para actualizar, instálalo encima de la versión anterior." \
+            --latest

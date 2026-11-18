@@ -1,0 +1,17 @@
+{
+  "name": "opengravity-diagramas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OpenGravity Diagramas: app web instalable y APK de Android (Capacitor)",
+  "scripts": {
+    "preparar-www": "node scripts/preparar-www.mjs",
+    "android:sync": "npm run preparar-www && npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.6.0",
+    "@capacitor/core": "8.6.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.6.0"
+  }
+}

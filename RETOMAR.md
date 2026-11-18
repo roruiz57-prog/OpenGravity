@@ -25,6 +25,7 @@
 - La app **no pierde lo escrito** si Android la cierra: las claves de IA se guardan al pegarlas, se
   reabre el cuadro que estaba abierto y el borrador del pedido se conserva. Hay botón "Pegar" y los campos
   de clave admiten el autocompletado del gestor de contraseñas.
+- Recuadro "Protege tus claves" en Ajustes de IA: tope de gasto en OpenRouter y restricción por API en Google.
 - **Generar con IA** (Gemini / OpenRouter), solo probado con respuestas simuladas: ver tarea 3.3.
 - Adaptada a pantallas de celular, en vertical y en horizontal.
 
@@ -34,19 +35,39 @@
 - Copiado a `main` con autorización del usuario. Vercel publica `diagramas-v7`.
 - Falta que el usuario lo pruebe en su celular: cerrar y abrir la app dos veces.
 
-### 3.2 App nativa de Android (APK) — PENDIENTE (fase 2 de lo que pidió el usuario)
-- El usuario pidió que la app no sea "de Chrome". La fase 1 ya está hecha: la app recuerda las claves y el
-  cuadro abierto aunque Android la cierre. Falta la fase 2.
-- Plan acordado: **Capacitor** con los archivos de la app dentro del APK, que funciona sin internet.
-  El APK lo arma **GitHub Actions** (`.github/workflows/apk.yml`) en cada push a `main` y lo publica en
-  **GitHub → Releases**. El usuario lo baja en el celular y lo instala, aceptando "orígenes desconocidos".
-- **Decisión pendiente con el usuario:** dónde guardar la llave de firma, que tiene que ser siempre la misma
-  para poder actualizar encima. Opciones: como "secreto" de GitHub (más seguro; él la carga en Settings → Secrets)
-  o dentro del repo privado (más simple).
-- Avisarle que el APK guarda sus datos aparte de Chrome: los diagramas se pasan con Guardar archivo y
-  Abrir archivo, y las claves hay que pegarlas de nuevo.
-- Si el push del workflow es rechazado por permisos ("workflows"), el archivo se sube desde la web de GitHub
-  o desde su PC.
+### 3.2 App nativa de Android (APK) — LISTA PARA ARMAR, FALTA LA LLAVE DE FIRMA
+**Ya está hecho, sin la llave:**
+- Proyecto Capacitor 8.6.0 (`package.json`, `capacitor.config.json`, carpeta `android/`), con los íconos de la app.
+- `npm run android:sync` copia la app a `www/` y la pasa a `android/`.
+- `android/app/build.gradle` firma leyendo **variables de entorno**. No hay llaves ni contraseñas en el repo.
+- `.github/workflows/apk.yml` arma el APK en GitHub en cada push a `main` (o a mano desde la pestaña Actions)
+  y lo publica en **Releases** como `OpenGravity.apk`. **Sin la llave cargada termina en verde con el aviso
+  "Falta la llave de firma" y no arma nada.**
+- `.vercelignore` evita que Vercel publique lo del APK.
+
+**Lo que falta: crear la llave EN LA PC DEL USUARIO** (decisión del usuario: que nunca pase por la nube de
+Claude ni quede en el repo). En su PC, con el repo clonado y Claude Code abierto, pedir:
+1. Comprobar que haya Java (`keytool -help`). Si no hay, instalar Temurin 21 (adoptium.net) o usar el de Android Studio.
+2. Crear la llave **fuera de la carpeta del repositorio**, por ejemplo en Documentos. El usuario escribe las
+   contraseñas en la terminal; **nunca en el chat**:
+   `keytool -genkeypair -v -keystore opengravity.jks -alias opengravity -keyalg RSA -keysize 2048 -validity 10000`
+3. Convertirla a texto base64. En Windows PowerShell:
+   `[Convert]::ToBase64String([IO.File]::ReadAllBytes("opengravity.jks")) | Set-Clipboard`
+4. En GitHub → repo OpenGravity → Settings → Secrets and variables → Actions → New repository secret, crear:
+   - `ANDROID_KEYSTORE_BASE64`: pegar el texto del paso 3.
+   - `ANDROID_KEYSTORE_PASSWORD`: la contraseña del almacén.
+   - `ANDROID_KEY_ALIAS`: `opengravity`.
+   - `ANDROID_KEY_PASSWORD`: la contraseña de la llave (si no pidió otra, es la misma).
+5. Guardar `opengravity.jks` y las contraseñas en el **gestor de contraseñas**, como adjunto o nota segura.
+   Después borrar el `.jks` de la PC y **vaciar el portapapeles**.
+   **Si se pierde la llave no se puede actualizar el APK** (habría que exportar los diagramas, desinstalar y reinstalar).
+6. GitHub → Actions → "APK de Android" → **Run workflow**. Al terminar, el APK queda en **Releases**.
+7. En el celular: entrar a GitHub (el repo es privado, hay que iniciar sesión) → Releases → bajar
+   `OpenGravity.apk` → permitir "instalar apps de orígenes desconocidos" → instalar.
+   Los datos del APK van aparte de los de la app de Chrome: pasar los diagramas con Guardar archivo y
+   Abrir archivo, y pegar de nuevo las claves de IA.
+
+**Nunca se probó un armado real del APK.** Puede fallar la primera vez: revisar el registro en Actions.
 
 ### 3.3 Probar la IA con claves reales
 - Hasta ahora solo se probó **simulando** las respuestas de Google y OpenRouter. Nunca se hizo una llamada real.
@@ -94,7 +115,7 @@
 - **Antes de ejecutar algo, confirmar en una frase lo que se entendió.**
 - Trabajar en la rama de trabajo y **pedir autorización cada vez** antes de copiar a `main`.
   El usuario suele responder "Sí, copialo a main".
-- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v8`).
+- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v9`).
   Si no, el celular sigue mostrando la versión vieja.
 - Después de publicar, recordarle: "cierra la app y ábrela dos veces".
 - Probar en escritorio (1400×860) y celular (360×740) antes de proponer publicar.

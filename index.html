@@ -109,6 +109,18 @@
   <div class="caja-modal caja-ia">
     <h3>Ajustes de IA</h3>
     <p class="ia-nota">Las claves se guardan solas apenas las pegas, solo en este dispositivo, y se envían únicamente a Google o a OpenRouter.</p>
+    <details class="ia-seguridad">
+      <summary>Protege tus claves</summary>
+      <ul>
+        <li><b>OpenRouter:</b> ponle un tope de gasto a la clave (0 si solo usas modelos gratis) en
+          <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">openrouter.ai/settings/keys</a>.</li>
+        <li><b>Google:</b> en <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">console.cloud.google.com/apis/credentials</a>,
+          abre tu clave y en "Restricciones de API" deja solo <i>Generative Language API</i>.
+          Restríngela por API, no por sitio web: así sigue funcionando también en la app instalada.</li>
+        <li>Si crees que una clave se filtró, bórrala en la página del proveedor, crea otra y pégala acá.</li>
+        <li>Nunca compartas tus claves en chats ni correos.</li>
+      </ul>
+    </details>
     <fieldset>
       <legend>Gemini (Google AI Studio)</legend>
       <p class="ia-nota">Crea una clave gratis con tu cuenta de Google en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.</p>
