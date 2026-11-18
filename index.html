@@ -20,6 +20,7 @@
   <button id="b-texto" class="btn" title="Agregar texto"><svg viewBox="0 0 24 24"><path d="M5 6h14M12 6v13"/></svg><span>Texto</span></button>
   <button id="b-grupo" class="btn" title="Agregar grupo (marco punteado)"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1" stroke-dasharray="3 2.5"/></svg><span>Grupo</span></button>
   <button id="b-fondo" class="btn" title="Cambiar el fondo"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m3 17 5-5 4 4 3-3 6 6"/><circle cx="16" cy="8.5" r="1.6"/></svg><span>Fondo</span></button>
+  <button id="b-ia" class="btn btn-ia" title="Generar con IA"><svg viewBox="0 0 24 24"><path d="M11 3.5 12.7 8l4.5 1.7-4.5 1.7L11 16l-1.7-4.6L4.8 9.7 9.3 8z"/><path d="m18 14 .8 2.2 2.2.8-2.2.8L18 20l-.8-2.2-2.2-.8 2.2-.8z"/></svg><span>IA</span></button>
   <span class="sep"></span>
   <button id="b-deshacer" class="btn" title="Deshacer (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg><span>Deshacer</span></button>
   <button id="b-rehacer" class="btn" title="Rehacer (Ctrl+Y)"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg><span>Rehacer</span></button>
@@ -37,6 +38,8 @@
 
 <div class="menu" id="menu" hidden>
   <button data-accion="biblioteca"><b>Mis diagramas</b></button>
+  <button data-accion="ia">Generar con IA…</button>
+  <button data-accion="ia-ajustes">Ajustes de IA…</button>
   <hr>
   <button data-accion="nuevo">Nuevo diagrama en blanco</button>
   <button data-accion="plantilla">Nuevo desde plantilla (Arnés)</button>
@@ -83,6 +86,62 @@
   </div>
 </div>
 
+<div class="modal" id="ia" hidden>
+  <div class="caja-modal caja-ia">
+    <h3>Generar con IA</h3>
+    <label for="ia-pedido" class="ia-etiqueta">Describe el diagrama que quieres</label>
+    <textarea id="ia-pedido" rows="4" placeholder="Por ejemplo: proceso de compra online en 6 pasos, con una decisión de pago aprobado o rechazado"></textarea>
+    <div class="ia-modo" role="radiogroup" aria-label="Qué hacer con el resultado">
+      <label class="check"><input type="radio" name="ia-modo" value="nuevo" checked> Crear un diagrama nuevo</label>
+      <label class="check"><input type="radio" name="ia-modo" value="modificar"> Modificar el diagrama abierto</label>
+    </div>
+    <p class="ia-estado" id="ia-estado" role="status" aria-live="polite"></p>
+    <div class="acciones">
+      <button type="button" id="ia-ajustes" class="btn-sec">Ajustes de IA</button>
+      <span class="relleno"></span>
+      <button type="button" id="ia-cerrar" class="btn-sec">Cerrar</button>
+      <button type="button" id="ia-generar" class="btn-pri">Generar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="ia-config" hidden>
+  <div class="caja-modal caja-ia">
+    <h3>Ajustes de IA</h3>
+    <p class="ia-nota">Las claves se guardan solo en este dispositivo y se envían únicamente a Google o a OpenRouter.</p>
+    <fieldset>
+      <legend>Gemini (Google AI Studio)</legend>
+      <p class="ia-nota">Crea una clave gratis con tu cuenta de Google en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.</p>
+      <label for="ia-clave-gemini" class="ia-etiqueta">Clave</label>
+      <input type="password" id="ia-clave-gemini" autocomplete="off" spellcheck="false" placeholder="Pega aquí tu clave">
+      <label for="ia-modelo-gemini" class="ia-etiqueta">Modelo</label>
+      <div class="fila-modelo"><select id="ia-modelo-gemini"></select><button type="button" id="ia-cargar-gemini" class="btn-sec">Probar y ver modelos</button></div>
+    </fieldset>
+    <fieldset>
+      <legend>OpenRouter (respaldo)</legend>
+      <p class="ia-nota">Tu clave está en <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a>.</p>
+      <label for="ia-clave-openrouter" class="ia-etiqueta">Clave</label>
+      <input type="password" id="ia-clave-openrouter" autocomplete="off" spellcheck="false" placeholder="Pega aquí tu clave">
+      <label for="ia-modelo-openrouter" class="ia-etiqueta">Modelo</label>
+      <div class="fila-modelo"><select id="ia-modelo-openrouter"></select><button type="button" id="ia-cargar-openrouter" class="btn-sec">Probar y ver modelos</button></div>
+      <label class="check"><input type="checkbox" id="ia-gratis" checked> Mostrar solo modelos gratuitos</label>
+    </fieldset>
+    <div class="fila">
+      <div class="campo" style="flex:1;min-width:160px"><label for="ia-principal" class="ia-etiqueta">Usar primero</label>
+        <select id="ia-principal"><option value="gemini">Gemini</option><option value="openrouter">OpenRouter</option></select></div>
+      <label class="check" style="flex:1;min-width:180px"><input type="checkbox" id="ia-respaldo" checked> Si falla, probar con el otro</label>
+    </div>
+    <label class="check"><input type="checkbox" id="ia-mostrar"> Mostrar las claves</label>
+    <p class="ia-estado" id="ia-config-estado" role="status" aria-live="polite"></p>
+    <div class="acciones">
+      <button type="button" id="ia-borrar-claves" class="btn-peligro">Borrar claves</button>
+      <span class="relleno"></span>
+      <button type="button" id="ia-config-cerrar" class="btn-sec">Cerrar</button>
+      <button type="button" id="ia-guardar" class="btn-pri">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="modal" hidden>
   <div class="caja-modal">
     <p id="modal-texto"></p>
@@ -98,6 +157,7 @@
 <input type="file" id="archivo" accept=".json,application/json" hidden>
 <!--/CUERPO-->
 <script src="js/plantillas.js"></script>
+<script src="js/ia.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

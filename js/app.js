@@ -1201,6 +1201,8 @@
     cerrarMenu();
     const accion = b.dataset.accion;
     if (accion === 'biblioteca') abrirBiblioteca();
+    else if (accion === 'ia') abrirIA();
+    else if (accion === 'ia-ajustes') abrirAjustesIA();
     else if (accion === 'nuevo') { crearDiagrama(window.PLANTILLAS.blanco); avisar('Diagrama nuevo creado'); }
     else if (accion === 'plantilla') { crearDiagrama(window.PLANTILLAS.arnes); avisar('Diagrama nuevo desde la plantilla'); }
     else if (accion === 'abrir') $('#archivo').click();
@@ -1220,6 +1222,203 @@
   $('#b-rehacer').addEventListener('click', rehacer);
   $('#b-ajustar').addEventListener('click', () => verTodo());
   $('#b-exportar').addEventListener('click', abrirExportar);
+
+  // ---------- Generar con IA ----------
+  // Ordena y completa lo que devuelve la IA antes de dibujarlo.
+  function prepararDiagramaIA(obj, bg) {
+    const claro = fondoClaro();
+    const vistos = new Set();
+    const nodos = (obj.nodes || []).filter((n) => n && typeof n === 'object').map((n, i) => {
+      let id = String(n.id ?? `n${i}`).trim().replace(/\s+/g, '-') || `n${i}`;
+      while (vistos.has(id)) id += '_';
+      vistos.add(id);
+      const m = { ...n, id };
+      if (!['box', 'text', 'group'].includes(m.type)) m.type = 'box';
+      if (m.type === 'box' && !FORMAS[m.shape]) m.shape = 'round';
+      const f = m.type === 'box' ? FORMAS[m.shape] : m.type === 'text' ? { w: 300, h: 90 } : { w: 460, h: 300 };
+      for (const k of ['x', 'y', 'w', 'h']) m[k] = Number(m[k]);
+      if (!(m.w > 20)) m.w = f.w;
+      if (!(m.h > 20)) m.h = f.h;
+      m.title = String(m.title ?? '');
+      m.subtitle = m.type === 'group' ? '' : String(m.subtitle ?? '');
+      const conSub = ['round', 'rect', 'hexagon', 'parallelogram', 'cylinder'].includes(m.shape);
+      if (!(Number(m.titleSize) > 0)) m.titleSize = m.type === 'group' ? 26 : m.type === 'text' ? 30 : conSub ? 30 : 24;
+      if (!(Number(m.subSize) > 0)) m.subSize = 16;
+      if (typeof m.color !== 'string' || !m.color) m.color = claro ? TINTA_OSCURA : m.type === 'box' ? '#e6f7ff' : m.type === 'group' ? '#ffb454' : '#7fe3ff';
+      if (m.type === 'box' && (typeof m.fill !== 'string' || !m.fill)) m.fill = '#1f78c8';
+      if (m.type !== 'box') m.fill = 'none';
+      if (!BORDES[m.border]) m.border = m.type === 'group' ? 'dashed' : 'solid';
+      if (typeof m.glow !== 'boolean') m.glow = true;
+      // Que el texto entre: ensanchar según la línea más larga.
+      if (m.type !== 'group') {
+        const larga = (t) => Math.max(0, ...String(t).split('\n').map((l) => l.length));
+        const ancho = Math.max(larga(m.title) * m.titleSize * 0.72 + 40, larga(m.subtitle) * m.subSize * 0.62 + 30);
+        const factor = ['ellipse', 'diamond', 'triangle'].includes(m.shape) && m.type === 'box' ? 1.35 : 1;
+        m.w = Math.min(760, Math.max(m.w, Math.round(ancho * factor)));
+      }
+      return m;
+    });
+    // Si la IA no dio posiciones, acomodar en una grilla.
+    if (nodos.some((n) => !Number.isFinite(n.x) || !Number.isFinite(n.y))) {
+      const sueltos = nodos.filter((n) => n.type !== 'group');
+      const cols = Math.ceil(Math.sqrt(sueltos.length || 1));
+      sueltos.forEach((n, i) => { n.x = (i % cols) * 340; n.y = Math.floor(i / cols) * 220; });
+      nodos.filter((n) => n.type === 'group').forEach((g) => { g.x = -40; g.y = -60; g.w = cols * 340; g.h = Math.ceil(sueltos.length / cols) * 220 + 40; });
+    }
+    for (const n of nodos) { n.x = ajustar(n.x); n.y = ajustar(n.y); }
+    const ids = new Set(nodos.map((n) => n.id));
+    const aristas = (obj.edges || []).filter((e) => e && ids.has(String(e.from)) && ids.has(String(e.to)) && String(e.from) !== String(e.to))
+      .map((e, i) => ({
+        id: `e${i}-${uid('')}`, from: String(e.from), to: String(e.to), label: String(e.label ?? ''),
+        style: BORDES[e.style] ? e.style : e.dashed ? 'dashed' : 'solid',
+        arrow: ['end', 'start', 'both', 'none'].includes(e.arrow) ? e.arrow : 'end',
+        color: typeof e.color === 'string' && e.color ? e.color : (claro ? TINTA_OSCURA : '#ffffff')
+      }));
+    return { version: 1, name: String(obj.name || '').slice(0, 60) || 'Diagrama con IA', bg: copia(bg), nodes: nodos.filter((n) => n.type === 'group').concat(nodos.filter((n) => n.type !== 'group')), edges: aristas };
+  }
+
+  const cuadroIA = $('#ia');
+  const cuadroAjustesIA = $('#ia-config');
+  let generacion = null; // AbortController mientras la IA trabaja
+  function estadoIA(texto, tipo = '') {
+    const e = $('#ia-estado');
+    e.textContent = texto;
+    e.className = 'ia-estado' + (tipo ? ' ' + tipo : '');
+  }
+  function abrirIA() {
+    cerrarMenu(); cerrarFormas(); cuadroExportar.hidden = true;
+    const a = window.IA.leerAjustes();
+    const hayClave = window.IA.tieneClave(a, 'gemini') || window.IA.tieneClave(a, 'openrouter');
+    estadoIA(hayClave ? '' : 'Antes de empezar, pega tu clave en Ajustes de IA.', hayClave ? '' : 'aviso-ia');
+    cuadroIA.hidden = false;
+    setTimeout(() => $('#ia-pedido').focus(), 30);
+  }
+  function cerrarIA() {
+    if (generacion) generacion.abort();
+    cuadroIA.hidden = true;
+  }
+  function trabajandoIA(si) {
+    $('#ia-generar').disabled = si;
+    $('#ia-pedido').disabled = si;
+    $('#ia-ajustes').disabled = si;
+    cuadroIA.querySelectorAll('input[name="ia-modo"]').forEach((r) => { r.disabled = si; });
+    $('#ia-cerrar').textContent = si ? 'Cancelar' : 'Cerrar';
+    cuadroIA.classList.toggle('trabajando', si);
+  }
+  async function generarIA() {
+    const pedido = $('#ia-pedido').value.trim();
+    if (!pedido) { estadoIA('Escribe qué diagrama quieres.', 'error-ia'); return $('#ia-pedido').focus(); }
+    const a = window.IA.leerAjustes();
+    if (!window.IA.tieneClave(a, 'gemini') && !window.IA.tieneClave(a, 'openrouter')) return abrirAjustesIA('Pega al menos una clave para poder generar.');
+    const modificar = cuadroIA.querySelector('input[name="ia-modo"]:checked').value === 'modificar';
+    generacion = new AbortController();
+    trabajandoIA(true);
+    try {
+      const r = await window.IA.generar({
+        pedido,
+        actual: modificar ? doc : null,
+        fondoClaro: fondoClaro(),
+        alAvanzar: (t) => estadoIA(t, 'cargando'),
+        senal: generacion.signal
+      });
+      const nuevo = prepararDiagramaIA(r.diagrama, doc.bg);
+      if (modificar) {
+        nuevo.name = doc.name;
+        cargarDoc(nuevo, { reiniciarHistorial: false }); // se puede deshacer
+      } else {
+        crearDiagrama(nuevo);
+      }
+      cuadroIA.hidden = true;
+      $('#ia-pedido').value = '';
+      estadoIA('');
+      avisar(`${modificar ? 'Diagrama modificado' : 'Diagrama creado'} con ${r.proveedor}`);
+    } catch (e) {
+      if (e.tipo === 'cancelado') estadoIA('Cancelado.');
+      else if (e.tipo === 'sin-clave') abrirAjustesIA('Pega al menos una clave para poder generar.');
+      else estadoIA(e.message || 'No se pudo generar el diagrama.', 'error-ia');
+    } finally {
+      generacion = null;
+      trabajandoIA(false);
+    }
+  }
+  $('#ia-generar').addEventListener('click', generarIA);
+  $('#ia-cerrar').addEventListener('click', cerrarIA);
+  $('#ia-ajustes').addEventListener('click', () => abrirAjustesIA());
+  $('#ia-pedido').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) generarIA(); });
+
+  // Ajustes de IA
+  function opcionesModelo(select, lista, elegido) {
+    const conElegido = elegido && !lista.some((m) => m.id === elegido) ? [{ id: elegido, nombre: elegido }, ...lista] : lista;
+    select.innerHTML = conElegido.length
+      ? conElegido.map((m) => `<option value="${esc(m.id)}" ${m.id === elegido ? 'selected' : ''}>${esc(m.nombre)}</option>`).join('')
+      : '<option value="">Elegir automáticamente</option>';
+  }
+  function abrirAjustesIA(mensaje = '') {
+    const a = window.IA.leerAjustes();
+    $('#ia-principal').value = a.principal;
+    $('#ia-respaldo').checked = a.respaldo;
+    $('#ia-clave-gemini').value = a.gemini.clave;
+    $('#ia-clave-openrouter').value = a.openrouter.clave;
+    $('#ia-gratis').checked = a.openrouter.soloGratis;
+    $('#ia-mostrar').checked = false;
+    $('#ia-clave-gemini').type = $('#ia-clave-openrouter').type = 'password';
+    opcionesModelo($('#ia-modelo-gemini'), [], a.gemini.modelo);
+    opcionesModelo($('#ia-modelo-openrouter'), [], a.openrouter.modelo);
+    $('#ia-config-estado').textContent = mensaje;
+    $('#ia-config-estado').className = 'ia-estado' + (mensaje ? ' aviso-ia' : '');
+    cuadroAjustesIA.hidden = false;
+  }
+  function ajustesDelFormulario() {
+    const a = window.IA.leerAjustes();
+    a.principal = $('#ia-principal').value;
+    a.respaldo = $('#ia-respaldo').checked;
+    a.gemini.clave = $('#ia-clave-gemini').value.trim();
+    a.gemini.modelo = $('#ia-modelo-gemini').value;
+    a.openrouter.clave = $('#ia-clave-openrouter').value.trim();
+    a.openrouter.modelo = $('#ia-modelo-openrouter').value;
+    a.openrouter.soloGratis = $('#ia-gratis').checked;
+    return a;
+  }
+  async function cargarModelos(proveedor) {
+    const a = ajustesDelFormulario();
+    const estado = $('#ia-config-estado');
+    if (!window.IA.tieneClave(a, proveedor)) { estado.textContent = `Primero pega la clave de ${window.IA.PROVEEDORES[proveedor]}.`; estado.className = 'ia-estado error-ia'; return; }
+    estado.textContent = `Consultando ${window.IA.PROVEEDORES[proveedor]}…`;
+    estado.className = 'ia-estado cargando';
+    try {
+      const lista = await window.IA.listarModelos(proveedor, a);
+      const select = $(`#ia-modelo-${proveedor}`);
+      const elegido = lista.some((m) => m.id === a[proveedor].modelo) ? a[proveedor].modelo : window.IA.modeloSugerido(proveedor, lista);
+      opcionesModelo(select, lista, elegido);
+      estado.textContent = lista.length
+        ? `Clave correcta: ${lista.length} modelos disponibles. Dejé elegido uno recomendado; puedes cambiarlo.`
+        : 'La clave funciona, pero no encontré modelos para elegir.';
+      estado.className = 'ia-estado ' + (lista.length ? 'ok-ia' : 'aviso-ia');
+    } catch (e) {
+      estado.textContent = e.message;
+      estado.className = 'ia-estado error-ia';
+    }
+  }
+  $('#ia-cargar-gemini').addEventListener('click', () => cargarModelos('gemini'));
+  $('#ia-cargar-openrouter').addEventListener('click', () => cargarModelos('openrouter'));
+  $('#ia-gratis').addEventListener('change', () => { if (window.IA.tieneClave(ajustesDelFormulario(), 'openrouter')) cargarModelos('openrouter'); });
+  $('#ia-mostrar').addEventListener('change', (ev) => { $('#ia-clave-gemini').type = $('#ia-clave-openrouter').type = ev.target.checked ? 'text' : 'password'; });
+  $('#ia-guardar').addEventListener('click', () => {
+    if (!window.IA.guardarAjustes(ajustesDelFormulario())) return avisar('No se pudieron guardar los ajustes en este dispositivo');
+    cuadroAjustesIA.hidden = true;
+    if (!cuadroIA.hidden) estadoIA('');
+    avisar('Ajustes de IA guardados');
+  });
+  $('#ia-config-cerrar').addEventListener('click', () => { cuadroAjustesIA.hidden = true; });
+  $('#ia-borrar-claves').addEventListener('click', async () => {
+    if (!(await preguntar('¿Borrar las claves de IA de este dispositivo?', { si: 'Borrar', peligro: true }))) return;
+    const a = window.IA.leerAjustes();
+    a.gemini.clave = ''; a.openrouter.clave = '';
+    window.IA.guardarAjustes(a);
+    $('#ia-clave-gemini').value = $('#ia-clave-openrouter').value = '';
+    avisar('Claves borradas');
+  });
+  $('#b-ia').addEventListener('click', abrirIA);
 
   // ---------- Pantalla "Mis diagramas" ----------
   const biblioteca = $('#biblioteca');
@@ -1304,7 +1503,12 @@
     else if (ctrl && ev.key.toLowerCase() === 's') { ev.preventDefault(); guardarArchivo(); }
     else if (ctrl && ev.key.toLowerCase() === 'd' && !escribiendo) { ev.preventDefault(); duplicarSeleccion(); }
     else if ((ev.key === 'Delete' || ev.key === 'Backspace') && !escribiendo) { ev.preventDefault(); eliminarSeleccion(); }
-    else if (ev.key === 'Escape') { if (escribiendo) document.activeElement.blur(); cerrarMenu(); cerrarFormas(); cuadroExportar.hidden = true; if (!biblioteca.hidden) cerrarBiblioteca(); seleccionar(null); dibujar(); }
+    else if (ev.key === 'Escape') {
+      if (escribiendo) document.activeElement.blur();
+      if (!cuadroAjustesIA.hidden) { cuadroAjustesIA.hidden = true; return; }
+      if (!cuadroIA.hidden) { cerrarIA(); return; }
+      cerrarMenu(); cerrarFormas(); cuadroExportar.hidden = true; if (!biblioteca.hidden) cerrarBiblioteca(); seleccionar(null); dibujar();
+    }
     else if (!escribiendo && sel && sel.kind === 'node' && ev.key.startsWith('Arrow')) {
       ev.preventDefault();
       const n = nodo(sel.id), paso = ev.shiftKey ? GRILLA * 5 : GRILLA;
@@ -1327,5 +1531,5 @@
   }
 
   // Para pruebas automáticas.
-  window.__diagramas = { get doc() { return doc; }, get abiertoId() { return abiertoId; }, view, verTodo, cargarDoc, leerIndice };
+  window.__diagramas = { get doc() { return doc; }, get abiertoId() { return abiertoId; }, view, verTodo, cargarDoc, leerIndice, prepararDiagramaIA };
 })();

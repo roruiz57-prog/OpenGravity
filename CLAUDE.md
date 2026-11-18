@@ -14,7 +14,7 @@ usarse en **Android y Windows** desde una sola base de código.
    HTML + CSS + JavaScript puro. Se instala desde Chrome (Android) o Edge/Chrome (Windows).
    Si más adelante hace falta tienda o `.exe`: Capacitor (Android) y Tauri/Electron (Windows).
 2. **Versión 1 = editor sin IA** (hecha). La app debe ser útil sin IA.
-3. **Versión 2 = botón "Generar con IA"** (pendiente):
+3. **Versión 2 = botón "Generar con IA"** (hecha, en `js/ia.js`):
    - Proveedores: **Google AI Studio (API de Gemini, nivel gratuito)** como principal y
      **OpenRouter** (créditos del usuario o modelos `:free`) como respaldo.
    - La suscripción Gemini Pro del usuario NO incluye API; se usa una clave de AI Studio aparte.
@@ -22,7 +22,10 @@ usarse en **Android y Windows** desde una sola base de código.
      (localStorage). Nada de claves en el código ni en el repositorio.
    - El modelo devuelve JSON en el mismo formato de `doc` (ver abajo). Validar con
      `normalizar()` y reintentar si viene roto; si falla, pasar al proveedor de respaldo.
-   - Proveedor y nombre de modelo configurables en Ajustes.
+   - Proveedor y nombre de modelo configurables en Ajustes. La lista de modelos se pide en vivo
+     a cada proveedor (`listarModelos()`); no hay nombres de modelo fijos en el código.
+   - Modos: crear un diagrama nuevo (va a Mis diagramas) o modificar el abierto (se puede deshacer).
+   - `prepararDiagramaIA()` en `app.js` corrige ids, completa campos y agranda formas para que entre el texto.
 
 ## Estructura
 - `index.html` — interfaz (barra, lienzo SVG, panel, menú).
@@ -31,6 +34,8 @@ usarse en **Android y Windows** desde una sola base de código.
   flechas que tocan el borde real (`salidaForma()`), gestos (mouse, dedo, pellizco),
   panel de propiedades, deshacer/rehacer, exportar PNG/JPG/WebP/SVG/PDF
   (`generarImagen()`, `crearPDF()` arma el PDF a mano, sin librerías), guardar/abrir `.json`.
+- `js/ia.js` — conexión con Gemini (AI Studio) y OpenRouter: ajustes, instrucciones al modelo,
+  reintento si la respuesta no es JSON y proveedor de respaldo. No toca la pantalla.
 - `js/plantillas.js` — plantillas (`arnes` = diagrama "Arnés del agente", `blanco`).
 - `manifest.webmanifest`, `sw.js`, `icons/` — instalación y modo sin conexión.
   Al cambiar archivos de la app, subir la versión de `CACHE` en `sw.js`.

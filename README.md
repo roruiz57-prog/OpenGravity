@@ -13,6 +13,8 @@ Editor de diagramas con estilo de pizarra brillante, instalable en **Android** y
   duplicar y borrar. También puedes guardar y abrir archivos `.json` para pasarlos a otro dispositivo.
 - Fondos: 8 listos para elegir (noche azul, violeta, negro, pizarra, plano técnico, blanco,
   gris, papel cuadriculado), color liso o degradado, cuadrícula o puntos, y estrellas.
+- **Generar con IA**: describes el diagrama y lo arma Gemini (clave gratis de Google AI Studio) u
+  OpenRouter. Puede crear uno nuevo o modificar el abierto. Las claves quedan solo en el dispositivo.
 - Exporta a PNG, JPG, WebP, SVG y PDF, con opción de fondo transparente (PNG, WebP, SVG).
 - Incluye la plantilla "Arnés del agente".
 
