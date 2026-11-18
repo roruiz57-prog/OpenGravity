@@ -1280,6 +1280,38 @@
   const cuadroIA = $('#ia');
   const cuadroAjustesIA = $('#ia-config');
   let generacion = null; // AbortController mientras la IA trabaja
+
+  // Android puede cerrar la app cuando el usuario va a otra (por ejemplo, al gestor de contraseñas).
+  // Se recuerda qué cuadro estaba abierto y lo escrito, para reabrirlo al volver.
+  const CLAVE_UI = 'opengravity.ui.v1';
+  function recordarUI() {
+    try {
+      localStorage.setItem(CLAVE_UI, JSON.stringify({
+        ia: !cuadroIA.hidden,
+        ajustes: !cuadroAjustesIA.hidden,
+        pedido: $('#ia-pedido').value,
+        modo: (cuadroIA.querySelector('input[name="ia-modo"]:checked') || {}).value || 'nuevo',
+        generando: !!generacion,
+        hora: Date.now()
+      }));
+    } catch (_) { /* sin almacenamiento */ }
+  }
+  function restaurarUI() {
+    let u = null;
+    try { u = JSON.parse(localStorage.getItem(CLAVE_UI) || 'null'); } catch (_) { /* nada */ }
+    if (!u) return;
+    if (u.pedido) $('#ia-pedido').value = u.pedido; // el borrador del pedido no se pierde nunca
+    const radio = cuadroIA.querySelector(`input[name="ia-modo"][value="${u.modo === 'modificar' ? 'modificar' : 'nuevo'}"]`);
+    if (radio) radio.checked = true;
+    if (Date.now() - (u.hora || 0) > 30 * 60000) return; // pasó mucho tiempo: no reabrir cuadros
+    if (u.ia) {
+      abrirIA();
+      if (u.generando) estadoIA('La generación se interrumpió porque la app se cerró. Toca Generar de nuevo.', 'aviso-ia');
+    }
+    if (u.ajustes) abrirAjustesIA();
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') recordarUI(); });
+  window.addEventListener('pagehide', recordarUI);
   function estadoIA(texto, tipo = '') {
     const e = $('#ia-estado');
     e.textContent = texto;
@@ -1291,11 +1323,13 @@
     const hayClave = window.IA.tieneClave(a, 'gemini') || window.IA.tieneClave(a, 'openrouter');
     estadoIA(hayClave ? '' : 'Antes de empezar, pega tu clave en Ajustes de IA.', hayClave ? '' : 'aviso-ia');
     cuadroIA.hidden = false;
+    recordarUI();
     setTimeout(() => $('#ia-pedido').focus(), 30);
   }
   function cerrarIA() {
     if (generacion) generacion.abort();
     cuadroIA.hidden = true;
+    recordarUI();
   }
   function trabajandoIA(si) {
     $('#ia-generar').disabled = si;
@@ -1313,6 +1347,7 @@
     const modificar = cuadroIA.querySelector('input[name="ia-modo"]:checked').value === 'modificar';
     generacion = new AbortController();
     trabajandoIA(true);
+    recordarUI();
     try {
       const r = await window.IA.generar({
         pedido,
@@ -1339,12 +1374,15 @@
     } finally {
       generacion = null;
       trabajandoIA(false);
+      recordarUI();
     }
   }
   $('#ia-generar').addEventListener('click', generarIA);
   $('#ia-cerrar').addEventListener('click', cerrarIA);
   $('#ia-ajustes').addEventListener('click', () => abrirAjustesIA());
   $('#ia-pedido').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) generarIA(); });
+  $('#ia-pedido').addEventListener('input', recordarUI);
+  cuadroIA.querySelectorAll('input[name="ia-modo"]').forEach((r) => r.addEventListener('change', recordarUI));
 
   // Ajustes de IA
   function opcionesModelo(select, lista, elegido) {
@@ -1366,8 +1404,39 @@
     opcionesModelo($('#ia-modelo-openrouter'), [], a.openrouter.modelo);
     $('#ia-config-estado').textContent = mensaje;
     $('#ia-config-estado').className = 'ia-estado' + (mensaje ? ' aviso-ia' : '');
+    $('#ia-guardado').textContent = '';
     cuadroAjustesIA.hidden = false;
+    recordarUI();
   }
+  // Cada cambio en Ajustes de IA se guarda al momento (no hace falta tocar "Listo").
+  let relojGuardado = 0;
+  function autoguardarIA() {
+    if (!window.IA.guardarAjustes(ajustesDelFormulario())) { $('#ia-guardado').textContent = ''; return; }
+    $('#ia-guardado').textContent = 'Guardado ✓';
+    clearTimeout(relojGuardado);
+    relojGuardado = setTimeout(() => { $('#ia-guardado').textContent = ''; }, 2500);
+  }
+  for (const id of ['ia-clave-gemini', 'ia-clave-openrouter']) $('#' + id).addEventListener('input', autoguardarIA);
+  for (const id of ['ia-modelo-gemini', 'ia-modelo-openrouter', 'ia-principal', 'ia-respaldo', 'ia-gratis']) $('#' + id).addEventListener('change', autoguardarIA);
+  // Los formularios de clave existen solo para el gestor de contraseñas: Enter no debe recargar la página.
+  cuadroAjustesIA.querySelectorAll('form').forEach((f) => f.addEventListener('submit', (ev) => ev.preventDefault()));
+  // Botón "Pegar": lee lo copiado (Chrome pide permiso la primera vez).
+  cuadroAjustesIA.querySelectorAll('[data-pegar]').forEach((b) => b.addEventListener('click', async () => {
+    const campo = $('#' + b.dataset.pegar);
+    const estado = $('#ia-config-estado');
+    try {
+      const texto = ((navigator.clipboard && navigator.clipboard.readText) ? await navigator.clipboard.readText() : '').trim();
+      if (!texto) throw new Error('vacío');
+      campo.value = texto;
+      autoguardarIA();
+      estado.textContent = 'Clave pegada. Toca "Probar y ver modelos" para comprobarla.';
+      estado.className = 'ia-estado ok-ia';
+    } catch (_) {
+      estado.textContent = 'No pude leer lo copiado. Mantén apretado el campo de la clave y elige "Pegar".';
+      estado.className = 'ia-estado aviso-ia';
+      campo.focus();
+    }
+  }));
   function ajustesDelFormulario() {
     const a = window.IA.leerAjustes();
     a.principal = $('#ia-principal').value;
@@ -1390,6 +1459,7 @@
       const select = $(`#ia-modelo-${proveedor}`);
       const elegido = lista.some((m) => m.id === a[proveedor].modelo) ? a[proveedor].modelo : window.IA.modeloSugerido(proveedor, lista);
       opcionesModelo(select, lista, elegido);
+      autoguardarIA();
       estado.textContent = lista.length
         ? `Clave correcta: ${lista.length} modelos disponibles. Dejé elegido uno recomendado; puedes cambiarlo.`
         : 'La clave funciona, pero no encontré modelos para elegir.';
@@ -1406,10 +1476,11 @@
   $('#ia-guardar').addEventListener('click', () => {
     if (!window.IA.guardarAjustes(ajustesDelFormulario())) return avisar('No se pudieron guardar los ajustes en este dispositivo');
     cuadroAjustesIA.hidden = true;
+    recordarUI();
     if (!cuadroIA.hidden) estadoIA('');
     avisar('Ajustes de IA guardados');
   });
-  $('#ia-config-cerrar').addEventListener('click', () => { cuadroAjustesIA.hidden = true; });
+  $('#ia-config-cerrar').addEventListener('click', () => { autoguardarIA(); cuadroAjustesIA.hidden = true; recordarUI(); });
   $('#ia-borrar-claves').addEventListener('click', async () => {
     if (!(await preguntar('¿Borrar las claves de IA de este dispositivo?', { si: 'Borrar', peligro: true }))) return;
     const a = window.IA.leerAjustes();
@@ -1505,7 +1576,7 @@
     else if ((ev.key === 'Delete' || ev.key === 'Backspace') && !escribiendo) { ev.preventDefault(); eliminarSeleccion(); }
     else if (ev.key === 'Escape') {
       if (escribiendo) document.activeElement.blur();
-      if (!cuadroAjustesIA.hidden) { cuadroAjustesIA.hidden = true; return; }
+      if (!cuadroAjustesIA.hidden) { autoguardarIA(); cuadroAjustesIA.hidden = true; recordarUI(); return; }
       if (!cuadroIA.hidden) { cerrarIA(); return; }
       cerrarMenu(); cerrarFormas(); cuadroExportar.hidden = true; if (!biblioteca.hidden) cerrarBiblioteca(); seleccionar(null); dibujar();
     }
@@ -1523,6 +1594,7 @@
   // ---------- Inicio ----------
   iniciarBiblioteca();
   actualizarBotones();
+  restaurarUI();
   requestAnimationFrame(() => { verTodo(); dibujarPanel(); });
 
   // App instalable y sin conexión (solo funciona en https o localhost).

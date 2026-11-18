@@ -22,7 +22,10 @@
 - Fondos: galería de 8, color liso o degradado, textura y estrellas.
 - Exportar a PNG, JPG, WebP, SVG y PDF, con opción de fondo transparente.
 - **Mis diagramas**: varios diagramas guardados en el dispositivo.
-- **Generar con IA** (Gemini / OpenRouter), solo probado con respuestas simuladas: ver tarea 3.2.
+- La app **no pierde lo escrito** si Android la cierra: las claves de IA se guardan al pegarlas, se
+  reabre el cuadro que estaba abierto y el borrador del pedido se conserva. Hay botón "Pegar" y los campos
+  de clave admiten el autocompletado del gestor de contraseñas.
+- **Generar con IA** (Gemini / OpenRouter), solo probado con respuestas simuladas: ver tarea 3.3.
 - Adaptada a pantallas de celular, en vertical y en horizontal.
 
 ## 3. Tareas pendientes (en orden)
@@ -31,7 +34,21 @@
 - Copiado a `main` con autorización del usuario. Vercel publica `diagramas-v7`.
 - Falta que el usuario lo pruebe en su celular: cerrar y abrir la app dos veces.
 
-### 3.2 Probar la IA con claves reales
+### 3.2 App nativa de Android (APK) — PENDIENTE (fase 2 de lo que pidió el usuario)
+- El usuario pidió que la app no sea "de Chrome". La fase 1 ya está hecha: la app recuerda las claves y el
+  cuadro abierto aunque Android la cierre. Falta la fase 2.
+- Plan acordado: **Capacitor** con los archivos de la app dentro del APK, que funciona sin internet.
+  El APK lo arma **GitHub Actions** (`.github/workflows/apk.yml`) en cada push a `main` y lo publica en
+  **GitHub → Releases**. El usuario lo baja en el celular y lo instala, aceptando "orígenes desconocidos".
+- **Decisión pendiente con el usuario:** dónde guardar la llave de firma, que tiene que ser siempre la misma
+  para poder actualizar encima. Opciones: como "secreto" de GitHub (más seguro; él la carga en Settings → Secrets)
+  o dentro del repo privado (más simple).
+- Avisarle que el APK guarda sus datos aparte de Chrome: los diagramas se pasan con Guardar archivo y
+  Abrir archivo, y las claves hay que pegarlas de nuevo.
+- Si el push del workflow es rechazado por permisos ("workflows"), el archivo se sube desde la web de GitHub
+  o desde su PC.
+
+### 3.3 Probar la IA con claves reales
 - Hasta ahora solo se probó **simulando** las respuestas de Google y OpenRouter. Nunca se hizo una llamada real.
 - El usuario tiene que:
   1. Crear una clave gratis en https://aistudio.google.com/apikey.
@@ -44,7 +61,7 @@
   - que el modelo sugerido sea razonable;
   - si OpenRouter acepta `response_format` con el modelo gratuito elegido.
 
-### 3.3 Guardar las pruebas automáticas en el repositorio
+### 3.4 Guardar las pruebas automáticas en el repositorio
 - Las pruebas con Playwright se escribieron en una carpeta temporal de la sesión y **se perdieron**.
   Rehacerlas dentro del repo, por ejemplo en `pruebas/`. Lo que deben cubrir:
   - editor básico: crear, conectar, mover, deshacer y exportar PNG;
@@ -77,7 +94,7 @@
 - **Antes de ejecutar algo, confirmar en una frase lo que se entendió.**
 - Trabajar en la rama de trabajo y **pedir autorización cada vez** antes de copiar a `main`.
   El usuario suele responder "Sí, copialo a main".
-- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v7`).
+- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v8`).
   Si no, el celular sigue mostrando la versión vieja.
 - Después de publicar, recordarle: "cierra la app y ábrela dos veces".
 - Probar en escritorio (1400×860) y celular (360×740) antes de proponer publicar.

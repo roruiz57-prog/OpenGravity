@@ -108,20 +108,34 @@
 <div class="modal" id="ia-config" hidden>
   <div class="caja-modal caja-ia">
     <h3>Ajustes de IA</h3>
-    <p class="ia-nota">Las claves se guardan solo en este dispositivo y se envían únicamente a Google o a OpenRouter.</p>
+    <p class="ia-nota">Las claves se guardan solas apenas las pegas, solo en este dispositivo, y se envían únicamente a Google o a OpenRouter.</p>
     <fieldset>
       <legend>Gemini (Google AI Studio)</legend>
       <p class="ia-nota">Crea una clave gratis con tu cuenta de Google en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.</p>
-      <label for="ia-clave-gemini" class="ia-etiqueta">Clave</label>
-      <input type="password" id="ia-clave-gemini" autocomplete="off" spellcheck="false" placeholder="Pega aquí tu clave">
+      <form class="form-clave" data-proveedor="gemini" autocomplete="on">
+        <!-- Usuario oculto: le indica al gestor de contraseñas qué clave va en este campo -->
+        <input type="text" name="usuario-gemini" autocomplete="username" value="Gemini" class="usuario-oculto" tabindex="-1" aria-hidden="true" readonly>
+        <label for="ia-clave-gemini" class="ia-etiqueta">Clave</label>
+        <div class="fila-clave">
+          <input type="password" id="ia-clave-gemini" name="clave-gemini" autocomplete="current-password" spellcheck="false" autocapitalize="off" placeholder="Toca aquí o usa Pegar">
+          <button type="button" class="btn-sec" data-pegar="ia-clave-gemini">Pegar</button>
+        </div>
+      </form>
       <label for="ia-modelo-gemini" class="ia-etiqueta">Modelo</label>
       <div class="fila-modelo"><select id="ia-modelo-gemini"></select><button type="button" id="ia-cargar-gemini" class="btn-sec">Probar y ver modelos</button></div>
     </fieldset>
     <fieldset>
       <legend>OpenRouter (respaldo)</legend>
       <p class="ia-nota">Tu clave está en <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a>.</p>
-      <label for="ia-clave-openrouter" class="ia-etiqueta">Clave</label>
-      <input type="password" id="ia-clave-openrouter" autocomplete="off" spellcheck="false" placeholder="Pega aquí tu clave">
+      <form class="form-clave" data-proveedor="openrouter" autocomplete="on">
+        <!-- Usuario oculto: le indica al gestor de contraseñas qué clave va en este campo -->
+        <input type="text" name="usuario-openrouter" autocomplete="username" value="OpenRouter" class="usuario-oculto" tabindex="-1" aria-hidden="true" readonly>
+        <label for="ia-clave-openrouter" class="ia-etiqueta">Clave</label>
+        <div class="fila-clave">
+          <input type="password" id="ia-clave-openrouter" name="clave-openrouter" autocomplete="current-password" spellcheck="false" autocapitalize="off" placeholder="Toca aquí o usa Pegar">
+          <button type="button" class="btn-sec" data-pegar="ia-clave-openrouter">Pegar</button>
+        </div>
+      </form>
       <label for="ia-modelo-openrouter" class="ia-etiqueta">Modelo</label>
       <div class="fila-modelo"><select id="ia-modelo-openrouter"></select><button type="button" id="ia-cargar-openrouter" class="btn-sec">Probar y ver modelos</button></div>
       <label class="check"><input type="checkbox" id="ia-gratis" checked> Mostrar solo modelos gratuitos</label>
@@ -133,11 +147,12 @@
     </div>
     <label class="check"><input type="checkbox" id="ia-mostrar"> Mostrar las claves</label>
     <p class="ia-estado" id="ia-config-estado" role="status" aria-live="polite"></p>
+    <p class="ia-guardado" id="ia-guardado" aria-live="polite"></p>
     <div class="acciones">
       <button type="button" id="ia-borrar-claves" class="btn-peligro">Borrar claves</button>
       <span class="relleno"></span>
       <button type="button" id="ia-config-cerrar" class="btn-sec">Cerrar</button>
-      <button type="button" id="ia-guardar" class="btn-pri">Guardar</button>
+      <button type="button" id="ia-guardar" class="btn-pri">Listo</button>
     </div>
   </div>
 </div>

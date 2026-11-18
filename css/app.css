@@ -375,6 +375,13 @@ button { font: inherit; color: inherit; }
 .ia-nota { margin: 0; font-size: 12.5px; color: var(--texto-suave); }
 .ia-modo { display: flex; flex-wrap: wrap; gap: 6px 18px; }
 .fila-modelo { display: flex; gap: 8px; flex-wrap: wrap; }
+.form-clave { display: flex; flex-direction: column; gap: 6px; margin: 0; }
+.fila-clave { display: flex; gap: 8px; }
+.fila-clave input { flex: 1 1 auto; min-width: 0; }
+.fila-clave button { flex: 0 0 auto; }
+/* Oculto a la vista pero visible para los gestores de contraseñas (no usar display:none). */
+.usuario-oculto { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); border: 0; opacity: 0; }
+.ia-guardado { margin: 0; min-height: 1em; font-size: 12.5px; color: #7dffb2; }
 .fila-modelo select { flex: 1 1 180px; min-width: 0; }
 .fila-modelo button { flex: 0 0 auto; }
 .ia-estado { margin: 0; min-height: 1.2em; font-size: 13px; color: var(--texto-suave); }
