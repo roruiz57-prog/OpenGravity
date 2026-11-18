@@ -13,6 +13,44 @@
   const FUENTE_TITULO = "'Arial Black','Segoe UI Black','Roboto',system-ui,sans-serif";
   const FUENTE_MONO = "ui-monospace,'Cascadia Mono',Consolas,'Roboto Mono','Courier New',monospace";
 
+  // ---------- Formas y bordes ----------
+  // Polígonos en proporciones de 0 a 1 del rectángulo que ocupa la forma.
+  const POLIGONOS = {
+    diamond: [[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]],
+    triangle: [[0.5, 0], [1, 1], [0, 1]],
+    hexagon: [[0.22, 0], [0.78, 0], [1, 0.5], [0.78, 1], [0.22, 1], [0, 0.5]],
+    parallelogram: [[0.18, 0], [1, 0], [0.82, 1], [0, 1]]
+  };
+  const FORMAS = {
+    round: { nombre: 'Redondeado', w: 220, h: 110 },
+    rect: { nombre: 'Rectángulo', w: 220, h: 110 },
+    ellipse: { nombre: 'Círculo', w: 160, h: 160 },
+    diamond: { nombre: 'Rombo', w: 170, h: 170 },
+    triangle: { nombre: 'Triángulo', w: 180, h: 160 },
+    hexagon: { nombre: 'Hexágono', w: 220, h: 120 },
+    parallelogram: { nombre: 'Paralelogramo', w: 230, h: 110 },
+    cylinder: { nombre: 'Cilindro', w: 160, h: 180 }
+  };
+  const BORDES = { solid: 'Continuo', dashed: 'Rayas', dotted: 'Puntos' };
+  const tapaCilindro = (h) => Math.min(h * 0.15, 20);
+
+  // Contorno SVG de una forma dentro del rectángulo (x, y, w, h); `attrs` son los atributos de estilo.
+  function figura(shape, x, y, w, h, attrs) {
+    if (shape === 'ellipse') return `<ellipse cx="${x + w / 2}" cy="${y + h / 2}" rx="${w / 2}" ry="${h / 2}" ${attrs}/>`;
+    if (POLIGONOS[shape]) return `<polygon points="${POLIGONOS[shape].map(([px, py]) => `${x + px * w},${y + py * h}`).join(' ')}" ${attrs}/>`;
+    if (shape === 'cylinder') {
+      const rx = w / 2, ry = tapaCilindro(h);
+      return `<path d="M${x},${y + ry} A${rx},${ry} 0 0 1 ${x + w},${y + ry} V${y + h - ry} A${rx},${ry} 0 0 1 ${x},${y + h - ry} Z M${x},${y + ry} A${rx},${ry} 0 0 0 ${x + w},${y + ry}" ${attrs}/>`;
+    }
+    return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${shape === 'rect' ? 0 : Math.min(14, w / 4, h / 4)}" ${attrs}/>`;
+  }
+  // Patrón del borde: rayas o puntos.
+  function trazoBorde(border) {
+    if (border === 'dashed') return ' stroke-dasharray="12 8"';
+    if (border === 'dotted') return ' stroke-dasharray="0.1 8" stroke-linecap="round"';
+    return '';
+  }
+
   // ---------- Estado ----------
   let doc = null;
   let sel = null; // { kind: 'node' | 'edge' | 'doc', id }
@@ -35,13 +73,21 @@
     const base = copia(window.PLANTILLAS.blanco);
     const out = Object.assign(base, d || {});
     out.bg = Object.assign({ c1: '#1d4f96', c2: '#0a2350', stars: true }, out.bg || {});
-    out.nodes = (Array.isArray(out.nodes) ? out.nodes : []).map((n) => Object.assign({
-      type: 'text', x: 0, y: 0, w: 200, h: 80, title: '', subtitle: '', color: '#ffffff',
-      fill: '#1f78c8', titleSize: 28, subSize: 16, glow: true
-    }, n, { id: n.id || uid('n') }));
-    out.edges = (Array.isArray(out.edges) ? out.edges : []).map((e) => Object.assign({
-      label: '', dashed: false, arrow: 'end', color: '#ffffff'
-    }, e, { id: e.id || uid('e') }));
+    out.nodes = (Array.isArray(out.nodes) ? out.nodes : []).map((n) => {
+      const m = Object.assign({
+        type: 'text', x: 0, y: 0, w: 200, h: 80, title: '', subtitle: '', color: '#ffffff',
+        fill: '#1f78c8', titleSize: 28, subSize: 16, glow: true
+      }, n, { id: n.id || uid('n') });
+      if (!FORMAS[m.shape]) m.shape = 'round';
+      if (!BORDES[m.border]) m.border = m.type === 'group' ? 'dashed' : 'solid';
+      return m;
+    });
+    out.edges = (Array.isArray(out.edges) ? out.edges : []).map((e) => {
+      const m = Object.assign({ label: '', arrow: 'end', color: '#ffffff' }, e, { id: e.id || uid('e') });
+      if (!BORDES[m.style]) m.style = m.dashed ? 'dashed' : 'solid'; // archivos viejos usaban "dashed"
+      delete m.dashed;
+      return m;
+    });
     const ids = new Set(out.nodes.map((n) => n.id));
     out.edges = out.edges.filter((e) => ids.has(e.from) && ids.has(e.to));
     return out;
@@ -119,6 +165,38 @@
     return { x: p.x + d.x * t, y: p.y + d.y * t };
   }
 
+  // Igual que salidaRect, pero respetando el contorno real (círculo, rombo, triángulo…).
+  // Se toma la intersección más lejana en la dirección d: la cara que mira hacia el otro elemento.
+  function salidaForma(n, p, d) {
+    if (n.type !== 'box') return salidaRect(n, p, d);
+    if (n.shape === 'ellipse') {
+      const rx = n.w / 2, ry = n.h / 2, cx = n.x + rx, cy = n.y + ry;
+      const qx = p.x - cx, qy = p.y - cy;
+      const a = (d.x * d.x) / (rx * rx) + (d.y * d.y) / (ry * ry);
+      const b = 2 * ((qx * d.x) / (rx * rx) + (qy * d.y) / (ry * ry));
+      const c = (qx * qx) / (rx * rx) + (qy * qy) / (ry * ry) - 1;
+      const disc = b * b - 4 * a * c;
+      if (disc < 0 || a === 0) return salidaRect(n, p, d);
+      const t = Math.max(0, (-b + Math.sqrt(disc)) / (2 * a));
+      return { x: p.x + d.x * t, y: p.y + d.y * t };
+    }
+    const poli = POLIGONOS[n.shape];
+    if (!poli) return salidaRect(n, p, d);
+    const pts = poli.map(([px, py]) => ({ x: n.x + px * n.w, y: n.y + py * n.h }));
+    let mejor = -1;
+    for (let i = 0; i < pts.length; i++) {
+      const A = pts[i], B = pts[(i + 1) % pts.length];
+      const ex = B.x - A.x, ey = B.y - A.y;
+      const den = d.x * ey - d.y * ex;
+      if (Math.abs(den) < 1e-9) continue;
+      const t = ((A.x - p.x) * ey - (A.y - p.y) * ex) / den;
+      const u = ((A.x - p.x) * d.y - (A.y - p.y) * d.x) / den;
+      if (t >= 0 && u >= -1e-9 && u <= 1 + 1e-9 && t > mejor) mejor = t;
+    }
+    if (mejor < 0) return salidaRect(n, p, d);
+    return { x: p.x + d.x * mejor, y: p.y + d.y * mejor };
+  }
+
   // Separa las flechas que unen el mismo par de elementos para que no se encimen.
   function desplazamientos() {
     const grupos = {};
@@ -147,8 +225,8 @@
     const sa = { x: ca.x + perp.x * o, y: ca.y + perp.y * o };
     const sb = { x: cb.x + perp.x * o, y: cb.y + perp.y * o };
     const hueco = 6;
-    let ini = salidaRect(a, sa, d);
-    let fin = salidaRect(b, sb, { x: -d.x, y: -d.y });
+    let ini = salidaForma(a, sa, d);
+    let fin = salidaForma(b, sb, { x: -d.x, y: -d.y });
     ini = { x: ini.x + d.x * hueco, y: ini.y + d.y * hueco };
     fin = { x: fin.x - d.x * hueco, y: fin.y - d.y * hueco };
     return { ini, fin, d, perp, o };
@@ -185,7 +263,10 @@
     const sub = n.type !== 'group' && n.subtitle ? String(n.subtitle).split('\n') : [];
     const altT = n.titleSize * 1.12, altS = n.subSize * 1.4, sep = tit.length && sub.length ? 8 : 0;
     const total = tit.length * altT + sub.length * altS + sep;
-    let y = n.y + n.h / 2 - total / 2;
+    let centroY = n.y + n.h / 2;
+    if (n.type === 'box' && n.shape === 'triangle') centroY = n.y + n.h * 0.64;
+    if (n.type === 'box' && n.shape === 'cylinder') centroY += tapaCilindro(n.h) / 2;
+    let y = centroY - total / 2;
     const cx = n.x + n.w / 2;
     const fil = n.glow ? ' filter="url(#brillo)"' : '';
     for (const t of tit) {
@@ -206,7 +287,7 @@
     if (n.type === 'group') {
       const fil = n.glow ? ' filter="url(#brillo-suave)"' : '';
       return `<g>
-        <rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="4" fill="none" stroke="${esc(n.color)}" stroke-width="3" stroke-dasharray="12 9"${fil}/>
+        <rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="4" fill="none" stroke="${esc(n.color)}" stroke-width="3"${trazoBorde(n.border)}${fil}/>
         ${n.title ? `<text x="${n.x - 4}" y="${n.y - 12}" font-family="${FUENTE_TITULO}" font-weight="900" font-size="${n.titleSize}" fill="${esc(n.color)}"${n.glow ? ' filter="url(#brillo)"' : ''}${datos}>${esc(n.title)}</text>` : ''}
         ${paraExportar ? '' : `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="none" stroke="transparent" stroke-width="22" pointer-events="stroke"${datos}/>`}
       </g>`;
@@ -215,7 +296,7 @@
     if (n.type === 'box') {
       const fil = n.glow ? ' filter="url(#brillo-suave)"' : '';
       const relleno = n.fill === 'none' ? 'none' : esc(n.fill);
-      forma = `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="14" fill="${relleno}" stroke="${esc(n.color)}" stroke-width="3"${fil}/>`;
+      forma = figura(n.shape, n.x, n.y, n.w, n.h, `fill="${relleno}" stroke="${esc(n.color)}" stroke-width="3" stroke-linejoin="round"${trazoBorde(n.border)}${fil}`);
     }
     const zona = paraExportar ? '' : `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="transparent"${datos}/>`;
     return `<g>${forma}<g pointer-events="none">${lineasTexto(n)}</g>${zona}</g>`;
@@ -238,7 +319,7 @@
     if (flechaFin) { puntas.push(punta(fin, d)); fin = { x: fin.x - d.x * largo * 0.8, y: fin.y - d.y * largo * 0.8 }; }
     if (flechaIni) { const r = { x: -d.x, y: -d.y }; puntas.push(punta(ini, r)); ini = { x: ini.x + d.x * largo * 0.8, y: ini.y + d.y * largo * 0.8 }; }
     const trazo = `M${ini.x},${ini.y} L${fin.x},${fin.y}`;
-    const guion = e.dashed ? ' stroke-dasharray="10 8"' : '';
+    const guion = e.style === 'dashed' ? ' stroke-dasharray="10 8"' : e.style === 'dotted' ? ' stroke-dasharray="0.1 7"' : '';
     const seleccionada = !paraExportar && sel && sel.kind === 'edge' && sel.id === e.id;
 
     let etiqueta = '';
@@ -352,12 +433,19 @@
   }
 
   // ---------- Crear y modificar ----------
-  function agregarNodo(tipo) {
+  function agregarNodo(tipo, forma = 'round') {
     const c = centroVista();
-    const n = { id: uid('n'), type: tipo, title: '', subtitle: '', glow: true, subSize: 16 };
-    if (tipo === 'box') Object.assign(n, { w: 220, h: 110, title: 'NUEVO', subtitle: 'descripción', color: '#e6f7ff', fill: '#1f78c8', titleSize: 34 });
+    const n = { id: uid('n'), type: tipo, title: '', subtitle: '', glow: true, subSize: 16, shape: 'round', border: 'solid' };
+    if (tipo === 'box') {
+      const f = FORMAS[forma] || FORMAS.round;
+      const conSubtitulo = ['round', 'rect', 'hexagon', 'parallelogram', 'cylinder'].includes(forma);
+      Object.assign(n, {
+        shape: FORMAS[forma] ? forma : 'round', w: f.w, h: f.h, title: 'NUEVO', subtitle: conSubtitulo ? 'descripción' : '',
+        color: '#e6f7ff', fill: '#1f78c8', titleSize: conSubtitulo ? 34 : 28
+      });
+    }
     if (tipo === 'text') Object.assign(n, { w: 280, h: 80, title: 'TÍTULO', subtitle: 'detalle · detalle', color: '#7fe3ff', fill: 'none', titleSize: 30 });
-    if (tipo === 'group') Object.assign(n, { w: 460, h: 300, title: 'GRUPO', color: '#ffb454', fill: 'none', titleSize: 26 });
+    if (tipo === 'group') Object.assign(n, { w: 460, h: 300, title: 'GRUPO', color: '#ffb454', fill: 'none', titleSize: 26, border: 'dashed' });
     n.x = ajustar(c.x - n.w / 2 + (Math.random() * 40 - 20));
     n.y = ajustar(c.y - n.h / 2 + (Math.random() * 40 - 20));
     if (tipo === 'group') doc.nodes.unshift(n); else doc.nodes.push(n);
@@ -529,7 +617,7 @@
     } else if (gesto.tipo === 'conectar' && ev.type === 'pointerup') {
       const destino = nodoEn(ev.clientX, ev.clientY, gesto.desde);
       if (destino) {
-        const e = { id: uid('e'), from: gesto.desde, to: destino, label: '', dashed: false, arrow: 'end', color: '#ffffff' };
+        const e = { id: uid('e'), from: gesto.desde, to: destino, label: '', style: 'solid', arrow: 'end', color: '#ffffff' };
         doc.edges.push(e);
         confirmarCambio();
         gesto = null;
@@ -579,9 +667,14 @@
     if (sel.kind === 'node') {
       const n = nodo(sel.id);
       if (!n) { sel = null; return dibujarPanel(); }
-      const nombreTipo = { box: 'Caja', text: 'Texto', group: 'Grupo' }[n.type];
+      const nombreTipo = { box: 'Forma', text: 'Texto', group: 'Grupo' }[n.type];
+      const opciones = (lista, actual) => Object.entries(lista).map(([k, v]) => `<option value="${k}" ${k === actual ? 'selected' : ''}>${typeof v === 'string' ? v : v.nombre}</option>`).join('');
+      let formaYBorde = '';
+      if (n.type === 'box') formaYBorde += `<div class="campo" style="flex:1"><label for="p-forma">Forma</label><select id="p-forma">${opciones(FORMAS, n.shape)}</select></div>`;
+      if (n.type !== 'text') formaYBorde += `<div class="campo" style="flex:1"><label for="p-borde">Borde</label><select id="p-borde">${opciones(BORDES, n.border)}</select></div>`;
       h += `<h2>${nombreTipo}<button class="cerrar" id="p-cerrar" title="Cerrar">×</button></h2>
         <div class="campo"><label for="p-titulo">Título</label><input type="text" id="p-titulo" value="${esc(n.title)}"></div>`;
+      if (formaYBorde) h += `<div class="fila">${formaYBorde}</div>`;
       if (n.type !== 'group') h += `<div class="campo"><label for="p-sub">Subtítulo (Enter = nueva línea)</label><textarea id="p-sub" rows="2">${esc(n.subtitle)}</textarea></div>`;
       h += `<div class="campo"><span>${n.type === 'box' ? 'Color del borde y título' : 'Color'}</span>${muestras('p-color', COLORES, n.color, true)}</div>`;
       if (n.type === 'box') h += `<div class="campo"><span>Relleno</span>${muestras('p-relleno', RELLENOS, n.fill, true)}</div>`;
@@ -590,7 +683,7 @@
       h += `<div class="fila">
           <label class="check"><input type="checkbox" id="p-brillo" ${n.glow ? 'checked' : ''}> Brillo</label>
           <div class="campo" style="flex:1;min-width:120px"><select id="p-tipo" aria-label="Tipo">
-            <option value="box" ${n.type === 'box' ? 'selected' : ''}>Caja</option>
+            <option value="box" ${n.type === 'box' ? 'selected' : ''}>Forma</option>
             <option value="text" ${n.type === 'text' ? 'selected' : ''}>Texto</option>
             <option value="group" ${n.type === 'group' ? 'selected' : ''}>Grupo</option>
           </select></div>
@@ -608,8 +701,9 @@
         <div class="campo"><label for="p-etiqueta">Etiqueta</label><input type="text" id="p-etiqueta" value="${esc(e.label)}" placeholder="por ejemplo: escribe"></div>
         <div class="fila">
           <div class="campo" style="flex:1"><label for="p-linea">Línea</label><select id="p-linea">
-            <option value="0" ${!e.dashed ? 'selected' : ''}>Continua</option>
-            <option value="1" ${e.dashed ? 'selected' : ''}>Punteada</option></select></div>
+            <option value="solid" ${e.style === 'solid' ? 'selected' : ''}>Continua</option>
+            <option value="dashed" ${e.style === 'dashed' ? 'selected' : ''}>Rayas</option>
+            <option value="dotted" ${e.style === 'dotted' ? 'selected' : ''}>Puntos</option></select></div>
           <div class="campo" style="flex:1"><label for="p-puntas">Puntas</label><select id="p-puntas">
             <option value="end" ${e.arrow === 'end' ? 'selected' : ''}>Al final →</option>
             <option value="start" ${e.arrow === 'start' ? 'selected' : ''}>Al inicio ←</option>
@@ -650,13 +744,15 @@
     enVivo('p-nombre', (o, el) => { o.name = el.value; $('#nombre-doc').textContent = el.value; });
     on('p-brillo', 'change', (ev) => { objetivo().glow = ev.target.checked; confirmarCambio(); dibujar(); });
     on('p-estrellas', 'change', (ev) => { doc.bg.stars = ev.target.checked; confirmarCambio(); dibujar(); });
-    on('p-linea', 'change', (ev) => { objetivo().dashed = ev.target.value === '1'; confirmarCambio(); dibujar(); });
+    on('p-linea', 'change', (ev) => { objetivo().style = ev.target.value; confirmarCambio(); dibujar(); });
+    on('p-forma', 'change', (ev) => { objetivo().shape = ev.target.value; confirmarCambio(); dibujar(); });
+    on('p-borde', 'change', (ev) => { objetivo().border = ev.target.value; confirmarCambio(); dibujar(); });
     on('p-puntas', 'change', (ev) => { objetivo().arrow = ev.target.value; confirmarCambio(); dibujar(); });
     on('p-tipo', 'change', (ev) => {
       const n = objetivo();
       n.type = ev.target.value;
       if (n.type === 'box' && (!n.fill || n.fill === 'none')) n.fill = '#1f78c8';
-      if (n.type === 'group') { doc.nodes = doc.nodes.filter((x) => x !== n); doc.nodes.unshift(n); }
+      if (n.type === 'group') { doc.nodes = doc.nodes.filter((x) => x !== n); doc.nodes.unshift(n); if (n.border === 'solid') n.border = 'dashed'; }
       confirmarCambio(); dibujar(); dibujarPanel();
     });
     on('p-duplicar', 'click', duplicarSeleccion);
@@ -705,7 +801,8 @@
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
-  function generarPNG() {
+  // Dibuja el diagrama en un lienzo y lo convierte al tipo de imagen pedido (PNG, JPG o WebP).
+  function generarImagen(tipo = 'image/png', calidad) {
     return new Promise((resolver, rechazar) => {
       const { w, h, texto } = svgExportable();
       const escala = Math.min(3, Math.max(1, 3000 / Math.max(w, h)));
@@ -715,17 +812,66 @@
         const c = document.createElement('canvas');
         c.width = Math.round(w * escala);
         c.height = Math.round(h * escala);
-        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = doc.bg.c2; // fondo sólido por si el formato no admite transparencia
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
         URL.revokeObjectURL(url);
-        c.toBlob((b) => (b ? resolver(b) : rechazar(new Error('sin imagen'))), 'image/png');
+        c.toBlob((b) => (b ? resolver({ blob: b, ancho: c.width, alto: c.height, w, h }) : rechazar(new Error('sin imagen'))), tipo, calidad);
       };
       img.onerror = () => { URL.revokeObjectURL(url); rechazar(new Error('no se pudo dibujar')); };
       img.src = url;
     });
   }
-  async function exportarPNG() {
-    try { descargar(await generarPNG(), nombreArchivo() + '.png'); avisar('Imagen PNG exportada'); }
-    catch (_) { avisar('No se pudo crear la imagen'); }
+
+  // PDF de una página con la imagen JPG adentro, armado a mano (sin librerías, funciona sin internet).
+  function crearPDF(jpg, ancho, alto, pw, ph) {
+    const enc = new TextEncoder();
+    const partes = [];
+    const pos = [];
+    let largo = 0;
+    const agregar = (x) => { const b = typeof x === 'string' ? enc.encode(x) : x; partes.push(b); largo += b.length; };
+    const objeto = (num, cuerpo) => { pos[num] = largo; agregar(`${num} 0 obj\n${cuerpo}\nendobj\n`); };
+    agregar('%PDF-1.4\n');
+    objeto(1, '<< /Type /Catalog /Pages 2 0 R >>');
+    objeto(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+    objeto(3, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw} ${ph}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`);
+    pos[4] = largo;
+    agregar(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${ancho} /Height ${alto} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpg.length} >>\nstream\n`);
+    agregar(jpg);
+    agregar('\nendstream\nendobj\n');
+    const dibujo = `q ${pw} 0 0 ${ph} 0 0 cm /Im0 Do Q`;
+    objeto(5, `<< /Length ${dibujo.length} >>\nstream\n${dibujo}\nendstream`);
+    const inicioXref = largo;
+    let xref = 'xref\n0 6\n0000000000 65535 f \n';
+    for (let k = 1; k <= 5; k++) xref += String(pos[k]).padStart(10, '0') + ' 00000 n \n';
+    agregar(`${xref}trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${inicioXref}\n%%EOF\n`);
+    return new Blob(partes, { type: 'application/pdf' });
+  }
+
+  const FORMATOS = {
+    png: { tipo: 'image/png', nombre: 'PNG' },
+    jpg: { tipo: 'image/jpeg', calidad: 0.92, nombre: 'JPG' },
+    webp: { tipo: 'image/webp', calidad: 0.92, nombre: 'WebP' }
+  };
+  async function exportar(formato) {
+    try {
+      if (formato === 'svg') return exportarSVG();
+      if (formato === 'compartir') return compartir();
+      if (formato === 'pdf') {
+        const r = await generarImagen('image/jpeg', 0.92);
+        const jpg = new Uint8Array(await r.blob.arrayBuffer());
+        // Tamaño de página en puntos (1 px de pantalla = 0,75 pt).
+        descargar(crearPDF(jpg, r.ancho, r.alto, +(r.w * 0.75).toFixed(2), +(r.h * 0.75).toFixed(2)), nombreArchivo() + '.pdf');
+        return avisar('PDF exportado');
+      }
+      const f = FORMATOS[formato];
+      const r = await generarImagen(f.tipo, f.calidad);
+      descargar(r.blob, `${nombreArchivo()}.${formato}`);
+      avisar(`Imagen ${f.nombre} exportada`);
+    } catch (_) {
+      avisar('No se pudo exportar; prueba con otro formato');
+    }
   }
   function exportarSVG() {
     descargar(new Blob([svgExportable().texto], { type: 'image/svg+xml' }), nombreArchivo() + '.svg');
@@ -733,10 +879,10 @@
   }
   async function compartir() {
     try {
-      const archivo = new File([await generarPNG()], nombreArchivo() + '.png', { type: 'image/png' });
+      const archivo = new File([(await generarImagen('image/png')).blob], nombreArchivo() + '.png', { type: 'image/png' });
       await navigator.share({ files: [archivo], title: doc.name });
     } catch (err) {
-      if (err && err.name !== 'AbortError') avisar('No se pudo compartir; usa Exportar PNG');
+      if (err && err.name !== 'AbortError') avisar('No se pudo compartir; usa Exportar');
     }
   }
   function guardarArchivo() {
@@ -760,11 +906,44 @@
   // ---------- Menú, avisos y confirmaciones ----------
   const menu = $('#menu');
   function cerrarMenu() { menu.hidden = true; }
-  $('#b-menu').addEventListener('click', (ev) => { ev.stopPropagation(); menu.hidden = !menu.hidden; });
+  $('#b-menu').addEventListener('click', (ev) => { ev.stopPropagation(); cerrarFormas(); menu.hidden = !menu.hidden; });
   document.addEventListener('pointerdown', (ev) => { if (!menu.hidden && !menu.contains(ev.target) && !$('#b-menu').contains(ev.target)) cerrarMenu(); });
   try {
-    if (navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.png', { type: 'image/png' })] })) $('#m-compartir').hidden = false;
+    if (navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.png', { type: 'image/png' })] })) $('#f-compartir').hidden = false;
   } catch (_) { /* sin compartir */ }
+  try {
+    const c = document.createElement('canvas');
+    c.width = c.height = 1;
+    if (c.toDataURL('image/webp').startsWith('data:image/webp')) $('#f-webp').hidden = false;
+  } catch (_) { /* sin WebP */ }
+
+  // Cuadro de exportación
+  const cuadroExportar = $('#exportar');
+  function abrirExportar() { cerrarMenu(); cerrarFormas(); cuadroExportar.hidden = false; }
+  $('#exportar-cerrar').addEventListener('click', () => { cuadroExportar.hidden = true; });
+  cuadroExportar.addEventListener('click', (ev) => {
+    if (ev.target === cuadroExportar) { cuadroExportar.hidden = true; return; }
+    const b = ev.target.closest('[data-formato]');
+    if (!b) return;
+    cuadroExportar.hidden = true;
+    exportar(b.dataset.formato);
+  });
+
+  // Selector de formas
+  const selectorFormas = $('#formas');
+  selectorFormas.innerHTML = Object.entries(FORMAS).map(([k, f]) =>
+    `<button type="button" role="menuitem" data-forma="${k}"><svg viewBox="0 0 40 32">${figura(k, 3, 3, 34, 26, '')}</svg>${f.nombre}</button>`).join('');
+  function cerrarFormas() { selectorFormas.hidden = true; }
+  $('#b-forma').addEventListener('click', (ev) => { ev.stopPropagation(); cerrarMenu(); selectorFormas.hidden = !selectorFormas.hidden; });
+  selectorFormas.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-forma]');
+    if (!b) return;
+    cerrarFormas();
+    agregarNodo('box', b.dataset.forma);
+  });
+  document.addEventListener('pointerdown', (ev) => {
+    if (!selectorFormas.hidden && !selectorFormas.contains(ev.target) && !$('#b-forma').contains(ev.target)) cerrarFormas();
+  });
 
   function preguntar(texto) {
     return new Promise((resolver) => {
@@ -795,19 +974,16 @@
       if (ok) cargarDoc(copia(window.PLANTILLAS[accion === 'nuevo' ? 'blanco' : 'arnes']), { reiniciarHistorial: false });
     } else if (accion === 'abrir') $('#archivo').click();
     else if (accion === 'guardar') guardarArchivo();
-    else if (accion === 'png') exportarPNG();
-    else if (accion === 'svg') exportarSVG();
-    else if (accion === 'compartir') compartir();
+    else if (accion === 'exportar') abrirExportar();
     else if (accion === 'fondo') { seleccionar({ kind: 'doc' }); dibujar(); }
   });
 
-  $('#b-caja').addEventListener('click', () => agregarNodo('box'));
   $('#b-texto').addEventListener('click', () => agregarNodo('text'));
   $('#b-grupo').addEventListener('click', () => agregarNodo('group'));
   $('#b-deshacer').addEventListener('click', deshacer);
   $('#b-rehacer').addEventListener('click', rehacer);
   $('#b-ajustar').addEventListener('click', verTodo);
-  $('#b-png').addEventListener('click', exportarPNG);
+  $('#b-exportar').addEventListener('click', abrirExportar);
 
   // ---------- Teclado (Windows) ----------
   document.addEventListener('keydown', (ev) => {
@@ -818,7 +994,7 @@
     else if (ctrl && ev.key.toLowerCase() === 's') { ev.preventDefault(); guardarArchivo(); }
     else if (ctrl && ev.key.toLowerCase() === 'd' && !escribiendo) { ev.preventDefault(); duplicarSeleccion(); }
     else if ((ev.key === 'Delete' || ev.key === 'Backspace') && !escribiendo) { ev.preventDefault(); eliminarSeleccion(); }
-    else if (ev.key === 'Escape') { if (escribiendo) document.activeElement.blur(); cerrarMenu(); seleccionar(null); dibujar(); }
+    else if (ev.key === 'Escape') { if (escribiendo) document.activeElement.blur(); cerrarMenu(); cerrarFormas(); cuadroExportar.hidden = true; seleccionar(null); dibujar(); }
     else if (!escribiendo && sel && sel.kind === 'node' && ev.key.startsWith('Arrow')) {
       ev.preventDefault();
       const n = nodo(sel.id), paso = ev.shiftKey ? GRILLA * 5 : GRILLA;

@@ -3,12 +3,14 @@
 Editor de diagramas con estilo de pizarra brillante, instalable en **Android** y **Windows**.
 
 ## Qué hace (versión 1)
-- Cajas, textos con brillo y grupos con marco punteado.
-- Flechas continuas o punteadas, con etiqueta y puntas configurables.
+- 8 formas: redondeado, rectángulo, círculo, rombo, triángulo, hexágono, paralelogramo y cilindro.
+- Bordes continuos, con rayas o con puntos (formas, grupos y flechas).
+- Textos con brillo y grupos con marco punteado.
+- Flechas con etiqueta y puntas configurables, que tocan el borde real de cada forma.
 - Arrastrar, cambiar tamaño, colores, deshacer y rehacer.
 - Funciona con mouse y con el dedo (dos dedos para zoom).
 - Guarda solo en el dispositivo; también puedes guardar y abrir archivos `.json`.
-- Exporta a imagen PNG o SVG.
+- Exporta a PNG, JPG, WebP, SVG y PDF.
 - Incluye la plantilla "Arnés del agente".
 
 ## Usarla en la PC

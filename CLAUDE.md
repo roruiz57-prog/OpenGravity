@@ -27,8 +27,10 @@ usarse en **Android y Windows** desde una sola base de código.
 ## Estructura
 - `index.html` — interfaz (barra, lienzo SVG, panel, menú).
 - `css/app.css` — estilos; en pantallas ≤760px el panel es una hoja inferior.
-- `js/app.js` — todo el editor: estado, dibujo SVG, gestos (mouse, dedo, pellizco),
-  panel de propiedades, deshacer/rehacer, exportar PNG/SVG, guardar/abrir `.json`.
+- `js/app.js` — todo el editor: estado, dibujo SVG, formas (`FORMAS`, `POLIGONOS`, `figura()`),
+  flechas que tocan el borde real (`salidaForma()`), gestos (mouse, dedo, pellizco),
+  panel de propiedades, deshacer/rehacer, exportar PNG/JPG/WebP/SVG/PDF
+  (`generarImagen()`, `crearPDF()` arma el PDF a mano, sin librerías), guardar/abrir `.json`.
 - `js/plantillas.js` — plantillas (`arnes` = diagrama "Arnés del agente", `blanco`).
 - `manifest.webmanifest`, `sw.js`, `icons/` — instalación y modo sin conexión.
   Al cambiar archivos de la app, subir la versión de `CACHE` en `sw.js`.
@@ -39,13 +41,17 @@ usarse en **Android y Windows** desde una sola base de código.
   "version": 1, "name": "…",
   "bg": { "c1": "#1d4f96", "c2": "#0a2350", "stars": true },
   "nodes": [{ "id": "…", "type": "box|text|group", "x": 0, "y": 0, "w": 200, "h": 80,
+              "shape": "round|rect|ellipse|diamond|triangle|hexagon|parallelogram|cylinder",
+              "border": "solid|dashed|dotted",
               "title": "…", "subtitle": "línea1\nlínea2", "color": "#7fe3ff",
               "fill": "#1f78c8", "titleSize": 30, "subSize": 16, "glow": true }],
   "edges": [{ "id": "…", "from": "idNodo", "to": "idNodo", "label": "…",
-              "dashed": false, "arrow": "end|start|both|none", "color": "#ffffff" }]
+              "style": "solid|dashed|dotted", "arrow": "end|start|both|none", "color": "#ffffff" }]
 }
 ```
 `x, y` es la esquina superior izquierda. Los grupos se dibujan detrás de todo.
+`type: "box"` es la "Forma" en la interfaz; `shape` solo aplica a ella. `border` aplica a formas y grupos.
+Archivos viejos con `"dashed": true` en flechas se convierten solos a `style` en `normalizar()`.
 
 ## Cómo probarla en la PC
 Necesita un servidor local (el modo sin conexión no funciona abriendo el archivo directo):

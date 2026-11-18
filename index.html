@@ -16,7 +16,7 @@
 <header class="barra" role="toolbar" aria-label="Herramientas">
   <button id="b-menu" class="btn" title="Menú"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>Menú</span></button>
   <span class="sep"></span>
-  <button id="b-caja" class="btn" title="Agregar caja"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="3"/></svg><span>Caja</span></button>
+  <button id="b-forma" class="btn" title="Agregar forma"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="10" height="9" rx="2"/><circle cx="16.5" cy="15.5" r="4.5"/></svg><span>Forma</span></button>
   <button id="b-texto" class="btn" title="Agregar texto"><svg viewBox="0 0 24 24"><path d="M5 6h14M12 6v13"/></svg><span>Texto</span></button>
   <button id="b-grupo" class="btn" title="Agregar grupo (marco punteado)"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1" stroke-dasharray="3 2.5"/></svg><span>Grupo</span></button>
   <span class="sep"></span>
@@ -24,7 +24,7 @@
   <button id="b-rehacer" class="btn" title="Rehacer (Ctrl+Y)"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg><span>Rehacer</span></button>
   <span class="sep"></span>
   <button id="b-ajustar" class="btn" title="Ver todo el diagrama"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span>Ver todo</span></button>
-  <button id="b-png" class="btn" title="Exportar imagen PNG"><svg viewBox="0 0 24 24"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg><span>PNG</span></button>
+  <button id="b-exportar" class="btn" title="Exportar (PNG, JPG, PDF…)"><svg viewBox="0 0 24 24"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg><span>Exportar</span></button>
   <span class="nombre" id="nombre-doc"></span>
 </header>
 
@@ -41,11 +41,26 @@
   <button data-accion="abrir">Abrir archivo…</button>
   <button data-accion="guardar">Guardar archivo (.json)</button>
   <hr>
-  <button data-accion="png">Exportar imagen PNG</button>
-  <button data-accion="svg">Exportar imagen SVG</button>
-  <button data-accion="compartir" id="m-compartir" hidden>Compartir imagen…</button>
+  <button data-accion="exportar">Exportar (PNG, JPG, PDF…)</button>
   <hr>
   <button data-accion="fondo">Nombre y fondo del diagrama</button>
+</div>
+
+<div class="formas" id="formas" hidden role="menu" aria-label="Elegir forma"></div>
+
+<div class="modal" id="exportar" hidden>
+  <div class="caja-modal">
+    <h3>Exportar diagrama</h3>
+    <div class="formatos">
+      <button data-formato="png"><b>PNG</b><span>Máxima calidad</span></button>
+      <button data-formato="jpg"><b>JPG</b><span>Más liviano, ideal para WhatsApp o correo</span></button>
+      <button data-formato="webp" id="f-webp" hidden><b>WebP</b><span>Liviano y nítido</span></button>
+      <button data-formato="svg"><b>SVG</b><span>Vectorial: se amplía sin perder calidad</span></button>
+      <button data-formato="pdf"><b>PDF</b><span>Para imprimir o enviar como documento</span></button>
+      <button data-formato="compartir" id="f-compartir" hidden><b>Compartir</b><span>Enviar la imagen a otra app</span></button>
+    </div>
+    <div class="acciones"><button id="exportar-cerrar" class="btn-sec">Cerrar</button></div>
+  </div>
 </div>
 
 <div class="modal" id="modal" hidden>

@@ -209,7 +209,7 @@ button { font: inherit; color: inherit; }
   display: flex;
   flex-direction: column;
 }
-.menu[hidden], .modal[hidden], .panel[hidden], .pista[hidden] { display: none; }
+.menu[hidden], .modal[hidden], .panel[hidden], .pista[hidden], .formas[hidden] { display: none; }
 .menu button {
   text-align: left;
   padding: 10px 12px;
@@ -220,6 +220,57 @@ button { font: inherit; color: inherit; }
 }
 .menu button:hover { background: var(--superficie-2); }
 .menu hr { border: 0; border-top: 1px solid var(--borde); margin: 4px 6px; width: auto; }
+
+/* ---------- Selector de formas ---------- */
+.formas {
+  position: fixed;
+  top: calc(max(6px, env(safe-area-inset-top, 0px)) + 58px);
+  left: max(70px, env(safe-area-inset-left, 0px));
+  z-index: 20;
+  width: min(340px, calc(100% - 20px));
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .45);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+.formas button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 2px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--texto-suave);
+}
+.formas button:hover { background: var(--superficie-2); color: var(--texto); }
+.formas svg { width: 40px; height: 32px; fill: none; stroke: var(--acento); stroke-width: 1.8; stroke-linejoin: round; }
+
+/* ---------- Exportar ---------- */
+.caja-modal h3 { margin: 0 0 12px; font-size: 16px; }
+.formatos { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.formatos button {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--borde);
+  background: var(--fondo);
+  cursor: pointer;
+}
+.formatos button:hover { border-color: var(--acento); }
+.formatos b { min-width: 70px; color: var(--acento); font-size: 14px; }
+.formatos span { color: var(--texto-suave); font-size: 13px; }
+.formatos [hidden] { display: none; }
 
 /* ---------- Modal y aviso ---------- */
 .modal {
@@ -279,6 +330,7 @@ button { font: inherit; color: inherit; }
   .btn svg { width: 24px; height: 24px; }
   .pista { font-size: 12px; }
   .menu { min-width: 0; width: min(300px, calc(100% - 20px)); }
+  .formas { left: max(10px, env(safe-area-inset-left, 0px)); }
 }
 
 /* Celular vertical: el panel es una hoja que sube desde abajo. */
@@ -302,6 +354,8 @@ button { font: inherit; color: inherit; }
   .barra { padding-block: 2px; }
   .btn { padding: 5px 0; }
   .menu { top: calc(max(2px, env(safe-area-inset-top, 0px)) + 44px); max-height: calc(100% - 54px); overflow-y: auto; }
+  .formas { top: calc(max(2px, env(safe-area-inset-top, 0px)) + 44px); }
+  .modal { overflow-y: auto; }
   .panel { width: 270px; padding: 10px 12px; gap: 8px; }
   .panel .campo textarea { min-height: 40px; }
   .pista { display: none; }
