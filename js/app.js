@@ -98,7 +98,8 @@
 
   // ---------- Estado ----------
   let doc = null;
-  let sel = null; // { kind: 'node' | 'edge' | 'doc', id }
+  let sel = null; // { kind: 'node' | 'edge' | 'doc', id } o { kind: 'multi', ids: [...] }
+  let eligiendoVarias = false; // modo "Elegir varias" (celular): cada toque suma o quita una forma
   const view = { x: 0, y: 0, k: 1 };
   let pasado = [];
   let futuro = [];
@@ -168,6 +169,10 @@
   function tras_historial() {
     if (sel && sel.kind === 'node' && !nodo(sel.id)) sel = null;
     if (sel && sel.kind === 'edge' && !arista(sel.id)) sel = null;
+    if (sel && sel.kind === 'multi') {
+      sel.ids = sel.ids.filter((id) => nodo(id));
+      if (!sel.ids.length) sel = null;
+    }
     guardarLocal();
     dibujar();
     dibujarPanel();
@@ -362,6 +367,7 @@
     const a = nodo(e.from), b = nodo(e.to);
     if (!a || !b) return null;
     const ca = centro(a), cb = centro(b);
+    if (ca.x === cb.x && ca.y === cb.y) return null; // una encima de la otra: no hay dirección para la flecha
     const [p, q] = e.from < e.to ? [ca, cb] : [cb, ca];
     const L = Math.hypot(q.x - p.x, q.y - p.y) || 1;
     const perp = { x: -(q.y - p.y) / L, y: (q.x - p.x) / L };
@@ -516,6 +522,18 @@
           <path d="M${cx - r * 0.5},${cy} H${cx + r * 0.5} M${cx},${cy - r * 0.5} V${cy + r * 0.5}" stroke="#04213f" stroke-width="${2.5 / k}" stroke-linecap="round" pointer-events="none"/></g>`;
       }
     }
+    if (sel && sel.kind === 'multi') {
+      const pad = 6 / k;
+      for (const id of sel.ids) {
+        const n = nodo(id);
+        if (n) s += `<rect x="${n.x - pad}" y="${n.y - pad}" width="${n.w + pad * 2}" height="${n.h + pad * 2}" fill="none" stroke="#7fe3ff" stroke-width="${2 / k}" stroke-dasharray="${6 / k} ${4 / k}" pointer-events="none" data-elegida="${id}"/>`;
+      }
+    }
+    if (gesto && gesto.tipo === 'mover' && gesto.guias) {
+      for (const g of gesto.guias) {
+        s += `<line x1="${g.x1}" y1="${g.y1}" x2="${g.x2}" y2="${g.y2}" stroke="#ff4fd8" stroke-width="${1.5 / k}" stroke-dasharray="${5 / k} ${4 / k}" pointer-events="none" data-guia="1"/>`;
+      }
+    }
     if (gesto && gesto.tipo === 'conectar') {
       const n = nodo(gesto.desde);
       if (n) {
@@ -621,6 +639,11 @@
       doc.edges = doc.edges.filter((e) => e.from !== sel.id && e.to !== sel.id);
     } else if (sel.kind === 'edge') {
       doc.edges = doc.edges.filter((e) => e.id !== sel.id);
+    } else if (sel.kind === 'multi') {
+      const ids = new Set(sel.ids);
+      doc.nodes = doc.nodes.filter((n) => !ids.has(n.id));
+      doc.edges = doc.edges.filter((e) => !ids.has(e.from) && !ids.has(e.to));
+      eligiendoVarias = false;
     } else return;
     sel = null;
     confirmarCambio();
@@ -656,6 +679,99 @@
     });
   }
 
+  // ---------- Varias formas elegidas: alinear y repartir ----------
+  function elegidas() {
+    return sel && sel.kind === 'multi' ? sel.ids.map(nodo).filter(Boolean) : [];
+  }
+  // Mueve cada forma a su nueva posición, arrastrando lo que tenga adentro si es un grupo.
+  function aplicarPosiciones(destinos) {
+    const ids = new Set(destinos.map((d) => d.n.id));
+    const movidos = new Set();
+    const pasos = destinos.map(({ n, x, y }) => ({ n, dx: x - n.x, dy: y - n.y, adentro: contenidoDeGrupo(n).filter((m) => !ids.has(m.id)) }));
+    for (const { n, dx, dy, adentro } of pasos) {
+      for (const m of [n, ...adentro]) {
+        if (movidos.has(m.id)) continue;
+        movidos.add(m.id);
+        m.x += dx; m.y += dy;
+      }
+    }
+    confirmarCambio();
+    dibujar();
+  }
+  function alinear(como) {
+    const ns = elegidas();
+    if (ns.length < 2) return;
+    const min = (f) => Math.min(...ns.map(f)), max = (f) => Math.max(...ns.map(f));
+    const izq = min((n) => n.x), der = max((n) => n.x + n.w), arr = min((n) => n.y), aba = max((n) => n.y + n.h);
+    aplicarPosiciones(ns.map((n) => {
+      let { x, y } = n;
+      if (como === 'izquierda') x = izq;
+      if (como === 'derecha') x = der - n.w;
+      if (como === 'centro') x = (izq + der) / 2 - n.w / 2;
+      if (como === 'arriba') y = arr;
+      if (como === 'abajo') y = aba - n.h;
+      if (como === 'medio') y = (arr + aba) / 2 - n.h / 2;
+      return { n, x, y };
+    }));
+  }
+  // Deja el mismo espacio entre formas; la primera y la última no se mueven.
+  function repartir(horizontal) {
+    const ns = elegidas();
+    if (ns.length < 3) return;
+    const pos = horizontal ? 'x' : 'y', tam = horizontal ? 'w' : 'h';
+    const orden = [...ns].sort((a, b) => (a[pos] + a[tam] / 2) - (b[pos] + b[tam] / 2));
+    const primera = orden[0], ultima = orden[orden.length - 1];
+    const ocupado = orden.reduce((s, n) => s + n[tam], 0);
+    const hueco = (ultima[pos] + ultima[tam] - primera[pos] - ocupado) / (orden.length - 1);
+    let actual = primera[pos];
+    aplicarPosiciones(orden.map((n) => {
+      const d = { n, x: n.x, y: n.y };
+      d[pos] = actual;
+      actual += n[tam] + hueco;
+      return d;
+    }));
+  }
+
+  // Guías magnéticas: si un borde o el centro de la forma que se mueve queda cerca del de otra forma,
+  // corrige el desplazamiento para que coincidan exacto y deja en `gesto.guias` las líneas a dibujar.
+  function lineasDe(x, y, w, h) {
+    return { xs: [x, x + w / 2, x + w], ys: [y, y + h / 2, y + h] };
+  }
+  function imanar(n, mx, my) {
+    const movidos = new Set(gesto.arrastrados.map((a) => a.id));
+    const x = gesto.orig.x + mx, y = gesto.orig.y + my;
+    const c = { x: x + n.w / 2, y: y + n.h / 2 };
+    const otros = doc.nodes.filter((o) => !movidos.has(o.id) &&
+      !(o.type === 'group' && c.x >= o.x && c.x <= o.x + o.w && c.y >= o.y && c.y <= o.y + o.h));
+    const propias = lineasDe(x, y, n.w, n.h);
+    const tolerancia = 8 / view.k;
+    let mejorX = null, mejorY = null;
+    for (const o of otros) {
+      const l = lineasDe(o.x, o.y, o.w, o.h);
+      for (const a of propias.xs) for (const b of l.xs) {
+        const d = b - a;
+        if (Math.abs(d) <= tolerancia && (!mejorX || Math.abs(d) < Math.abs(mejorX.d))) mejorX = { d, v: b, o };
+      }
+      for (const a of propias.ys) for (const b of l.ys) {
+        const d = b - a;
+        if (Math.abs(d) <= tolerancia && (!mejorY || Math.abs(d) < Math.abs(mejorY.d))) mejorY = { d, v: b, o };
+      }
+    }
+    // Donde no hay otra forma cerca, se usa la grilla.
+    mx = mejorX ? mx + mejorX.d : ajustar(gesto.orig.x + mx) - gesto.orig.x;
+    my = mejorY ? my + mejorY.d : ajustar(gesto.orig.y + my) - gesto.orig.y;
+    const nx = gesto.orig.x + mx, ny = gesto.orig.y + my;
+    if (mejorX) {
+      const o = mejorX.o;
+      gesto.guias.push({ x1: mejorX.v, x2: mejorX.v, y1: Math.min(ny, o.y) - 12, y2: Math.max(ny + n.h, o.y + o.h) + 12 });
+    }
+    if (mejorY) {
+      const o = mejorY.o;
+      gesto.guias.push({ y1: mejorY.v, y2: mejorY.v, x1: Math.min(nx, o.x) - 12, x2: Math.max(nx + n.w, o.x + o.w) + 12 });
+    }
+    return { mx, my };
+  }
+
   function nodoEn(cx, cy, excluir) {
     for (const el of document.elementsFromPoint(cx, cy)) {
       const id = el.getAttribute && el.getAttribute('data-node');
@@ -671,6 +787,7 @@
 
   // ---------- Gestos con mouse y dedos ----------
   function seleccionar(s) {
+    if (!s || s.kind !== 'multi') eligiendoVarias = false;
     const cambio = JSON.stringify(s) !== JSON.stringify(sel);
     sel = s;
     if (cambio) dibujarPanel();
@@ -706,6 +823,23 @@
       gesto = { tipo: 'redimensionar', id: n.id, inicio: p, orig: { w: n.w, h: n.h } };
     } else if (handle === 'connect') {
       gesto = { tipo: 'conectar', desde: idHandle, p };
+    } else if (idNodo && (ev.shiftKey || (eligiendoVarias && sel && sel.kind === 'multi'))) {
+      // Sumar o quitar la forma de las elegidas.
+      const actuales = sel && sel.kind === 'multi' ? sel.ids : sel && sel.kind === 'node' ? [sel.id] : [];
+      const ids = actuales.includes(idNodo) ? actuales.filter((id) => id !== idNodo) : [...actuales, idNodo];
+      if (!ids.length) seleccionar(null);
+      else if (ids.length === 1 && !eligiendoVarias) seleccionar({ kind: 'node', id: ids[0] });
+      else seleccionar({ kind: 'multi', ids });
+      gesto = null;
+    } else if (idNodo && sel && sel.kind === 'multi' && sel.ids.includes(idNodo)) {
+      // Arrastrar una de las elegidas mueve todas (y lo que tengan adentro).
+      const n = nodo(idNodo);
+      const vistos = new Set();
+      const arrastrados = [];
+      for (const m of elegidas().flatMap((e) => [e, ...contenidoDeGrupo(e)])) {
+        if (!vistos.has(m.id)) { vistos.add(m.id); arrastrados.push({ id: m.id, x: m.x, y: m.y }); }
+      }
+      gesto = { tipo: 'mover', id: idNodo, inicio: p, orig: { x: n.x, y: n.y }, arrastrados, movido: false };
     } else if (idNodo) {
       const n = nodo(idNodo);
       const ahora = Date.now();
@@ -756,8 +890,10 @@
       const dx = p.x - gesto.inicio.x, dy = p.y - gesto.inicio.y;
       if (!gesto.movido && Math.hypot(dx, dy) * view.k < 4) return;
       gesto.movido = true;
-      // El elemento principal se ajusta a la grilla y los de adentro se mueven exactamente lo mismo.
-      const mx = ajustar(gesto.orig.x + dx) - gesto.orig.x, my = ajustar(gesto.orig.y + dy) - gesto.orig.y;
+      // El elemento principal se ajusta a la grilla (o se "pega" a otra forma) y los de adentro se mueven lo mismo.
+      let mx = ajustar(gesto.orig.x + dx) - gesto.orig.x, my = ajustar(gesto.orig.y + dy) - gesto.orig.y;
+      gesto.guias = [];
+      if (!ev.altKey) ({ mx, my } = imanar(n, dx, dy));
       for (const a of gesto.arrastrados) {
         const m = nodo(a.id);
         if (m) { m.x = a.x + mx; m.y = a.y + my; }
@@ -877,6 +1013,7 @@
           </select></div>
         </div>
         <div class="botones">
+          <button class="btn-sec" id="p-varias">Elegir varias</button>
           <button class="btn-sec" id="p-duplicar">Duplicar</button>
           <button class="btn-sec" id="p-frente">Al frente</button>
           <button class="btn-sec" id="p-fondo">Al fondo</button>
@@ -902,6 +1039,31 @@
         <div class="botones">
           <button class="btn-sec" id="p-invertir">Invertir sentido</button>
           <button class="btn-peligro" id="p-eliminar">Eliminar</button>
+        </div>`;
+    } else if (sel.kind === 'multi') {
+      const cant = elegidas().length;
+      if (!cant) { sel = null; return dibujarPanel(); }
+      const pista = eligiendoVarias
+        ? '<p class="pista-varias">Toca otras formas para sumarlas o quitarlas.</p>'
+        : '<p class="pista-varias">Shift + clic suma o quita formas. Arrastra una para mover todas.</p>';
+      const sinDos = cant < 2 ? 'disabled' : '', sinTres = cant < 3 ? 'disabled' : '';
+      h += `<h2>${cant} ${cant === 1 ? 'forma elegida' : 'formas elegidas'}<button class="cerrar" id="p-cerrar" title="Cerrar">×</button></h2>
+        ${pista}
+        <div class="campo"><span>Alinear</span><div class="botones alinear">
+          <button class="btn-sec" data-alinear="izquierda" ${sinDos}>⇤ Izquierda</button>
+          <button class="btn-sec" data-alinear="centro" ${sinDos}>↔ Centro</button>
+          <button class="btn-sec" data-alinear="derecha" ${sinDos}>⇥ Derecha</button>
+          <button class="btn-sec" data-alinear="arriba" ${sinDos}>⤒ Arriba</button>
+          <button class="btn-sec" data-alinear="medio" ${sinDos}>↕ Medio</button>
+          <button class="btn-sec" data-alinear="abajo" ${sinDos}>⤓ Abajo</button>
+        </div></div>
+        <div class="campo"><span>Repartir parejo (3 o más)</span><div class="botones">
+          <button class="btn-sec" id="p-repartir-h" ${sinTres}>Horizontal</button>
+          <button class="btn-sec" id="p-repartir-v" ${sinTres}>Vertical</button>
+        </div></div>
+        <div class="botones">
+          ${eligiendoVarias ? '<button class="btn-pri" id="p-listo">Listo</button>' : ''}
+          <button class="btn-peligro" id="p-eliminar">Eliminar ${cant === 1 ? 'la forma' : `las ${cant}`}</button>
         </div>`;
     } else if (sel.kind === 'doc') {
       const bg = doc.bg;
@@ -963,6 +1125,20 @@
       if (n.type === 'group') { doc.nodes = doc.nodes.filter((x) => x !== n); doc.nodes.unshift(n); if (n.border === 'solid') n.border = 'dashed'; }
       confirmarCambio(); dibujar(); dibujarPanel();
     });
+    on('p-varias', 'click', () => {
+      eligiendoVarias = true;
+      sel = { kind: 'multi', ids: [sel.id] };
+      dibujarPanel();
+    });
+    on('p-listo', 'click', () => {
+      const ids = sel.ids;
+      eligiendoVarias = false;
+      if (ids.length === 1) sel = { kind: 'node', id: ids[0] };
+      dibujarPanel();
+    });
+    panel.querySelectorAll('[data-alinear]').forEach((b) => b.addEventListener('click', () => alinear(b.dataset.alinear)));
+    on('p-repartir-h', 'click', () => repartir(true));
+    on('p-repartir-v', 'click', () => repartir(false));
     on('p-duplicar', 'click', duplicarSeleccion);
     on('p-frente', 'click', () => moverOrden(true));
     on('p-fondo', 'click', () => moverOrden(false));

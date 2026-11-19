@@ -19,6 +19,10 @@
 - Editor de diagramas PWA, instalable en Android y Windows, con modo sin conexión.
 - Formas: 8 figuras, más texto con brillo y grupos. Bordes continuos, con rayas o con puntos. Flechas con etiqueta.
 - Mover un grupo arrastra lo que tiene adentro.
+- **Guías magnéticas** (19/11/2026): al arrastrar, la forma se pega a la altura o columna de otra (bordes o centro)
+  y aparece una línea rosa. Alt en la PC lo desactiva.
+- **Elegir varias** (19/11/2026): Shift + clic en la PC, o el botón "Elegir varias" en el celular. Permite alinear
+  (izquierda, centro, derecha, arriba, medio, abajo), repartir parejo (3 o más), mover juntas y borrar.
 - Fondos: galería de 8, color liso o degradado, textura y estrellas.
 - Exportar a PNG, JPG, WebP, SVG y PDF, con opción de fondo transparente.
 - **Mis diagramas**: varios diagramas guardados en el dispositivo.
@@ -74,6 +78,8 @@
   - si OpenRouter acepta `response_format` con el modelo gratuito elegido.
 
 ### 3.4 Guardar las pruebas automáticas en el repositorio
+- Ya hay una: `pruebas/prueba_alinear.py` (Python + Playwright) para guías y selección múltiple.
+  Se corre con `python -m http.server 8765` y `python pruebas/prueba_alinear.py`. Falta rehacer las demás.
 - Las pruebas con Playwright se escribieron en una carpeta temporal de la sesión y **se perdieron**.
   Rehacerlas dentro del repo, por ejemplo en `pruebas/`. Lo que deben cubrir:
   - editor básico: crear, conectar, mover, deshacer y exportar PNG;
@@ -87,7 +93,7 @@
   usar `NODE_PATH=$(npm root -g) node pruebas/<archivo>.js`.
 
 ## 4. Ideas que el usuario vio y todavía no eligió
-- **Selección múltiple y alinear**: elegir varios elementos para moverlos, borrarlos o cambiarles el color juntos, y alinearlos o repartirlos parejos.
+- Cambiar el color de varias formas elegidas a la vez (la selección múltiple ya existe).
 - **Flechas curvas o en ángulo recto**, como en los organigramas.
 - **Respaldo o sincronización con Google Drive**: hoy cada dispositivo tiene su propia lista y se pasan diagramas con Guardar/Abrir archivo `.json`.
 - Más plantillas.
@@ -106,7 +112,7 @@
 - **Antes de ejecutar algo, confirmar en una frase lo que se entendió.**
 - Trabajar en la rama de trabajo y **pedir autorización cada vez** antes de copiar a `main`.
   El usuario suele responder "Sí, copialo a main".
-- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v9`).
+- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v10`).
   Si no, el celular sigue mostrando la versión vieja.
 - Después de publicar, recordarle: "cierra la app y ábrela dos veces".
 - Probar en escritorio (1400×860) y celular (360×740) antes de proponer publicar.

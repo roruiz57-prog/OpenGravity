@@ -6,3 +6,5 @@ www/
 # Nunca subir llaves de firma
 *.jks
 *.keystore
+# Capturas que generan las pruebas
+pruebas/capturas/

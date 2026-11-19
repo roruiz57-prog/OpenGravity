@@ -553,3 +553,7 @@ button { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .aviso { transition: none; }
 }
+
+/* Varias formas elegidas */
+.botones.alinear { grid-template-columns: 1fr 1fr 1fr; }
+.pista-varias { margin: 0 0 4px; font-size: 12px; color: var(--texto-suave); }
