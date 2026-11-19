@@ -65,6 +65,10 @@
    y pegar de nuevo las claves de IA.
 
 ### 3.3 Probar la IA con claves reales
+- **19/11/2026:** el usuario cargó su clave de Google y "Probar y ver modelos" funcionó. Al generar, Google respondió
+  error 5xx (servidor saturado). Se agregó: 2 reintentos automáticos (a los 3 s y 8 s) y el detalle de Google en el
+  mensaje (`pruebas/prueba_ia_reintento.py`). Con el modelo **Gemini 3.1 Flash-Lite** generó bien un diagrama real
+  (el modelo sugerido, un Flash sin "lite", estaba saturado). El usuario dice que el diagrama se ve bien.
 - Hasta ahora solo se probó **simulando** las respuestas de Google y OpenRouter. Nunca se hizo una llamada real.
 - El usuario tiene que:
   1. Crear una clave gratis en https://aistudio.google.com/apikey.
@@ -112,7 +116,7 @@
 - **Antes de ejecutar algo, confirmar en una frase lo que se entendió.**
 - Trabajar en la rama de trabajo y **pedir autorización cada vez** antes de copiar a `main`.
   El usuario suele responder "Sí, copialo a main".
-- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v10`).
+- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v11`).
   Si no, el celular sigue mostrando la versión vieja.
 - Después de publicar, recordarle: "cierra la app y ábrela dos veces".
 - Probar en escritorio (1400×860) y celular (360×740) antes de proponer publicar.

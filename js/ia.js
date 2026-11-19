@@ -42,11 +42,30 @@ window.IA = (() => {
     if (estado === 402) return new ErrorIA(`${nombre} no tiene créditos suficientes para ese modelo. Elige un modelo gratuito en Ajustes de IA.`, 'creditos');
     if (estado === 404) return new ErrorIA(`${nombre} no encontró ese modelo. Elige otro en Ajustes de IA.`, 'modelo');
     if (estado === 429) return new ErrorIA(`Llegaste al límite de uso de ${nombre} por ahora. Espera un rato o usa el otro proveedor.`, 'limite');
-    if (estado >= 500) return new ErrorIA(`${nombre} está con problemas en este momento. Prueba de nuevo en unos minutos.`, 'servidor');
+    if (estado >= 500) return new ErrorIA(`${nombre} está con problemas en este momento${extra}. Prueba de nuevo en unos minutos o elige otro modelo en Ajustes de IA.`, 'servidor');
     return new ErrorIA(`${nombre} rechazó el pedido${extra}.`, 'otro');
   }
 
+  // Si el proveedor está saturado (error 5xx, muy común en el nivel gratuito), reintenta solo dos veces.
+  const ESPERAS_REINTENTO = [3000, 8000];
+  function esperar(ms, senal) {
+    return new Promise((listo, fallo) => {
+      if (senal && senal.aborted) return fallo(new ErrorIA('Cancelado.', 'cancelado'));
+      const reloj = setTimeout(listo, ms);
+      if (senal) senal.addEventListener('abort', () => { clearTimeout(reloj); fallo(new ErrorIA('Cancelado.', 'cancelado')); }, { once: true });
+    });
+  }
   async function pedir(proveedor, url, opciones, senal) {
+    for (let intento = 0; ; intento++) {
+      try {
+        return await pedirUnaVez(proveedor, url, opciones, senal);
+      } catch (e) {
+        if (e.tipo !== 'servidor' || intento >= ESPERAS_REINTENTO.length) throw e;
+        await esperar(ESPERAS_REINTENTO[intento], senal);
+      }
+    }
+  }
+  async function pedirUnaVez(proveedor, url, opciones, senal) {
     const control = new AbortController();
     const reloj = setTimeout(() => control.abort('tiempo'), TIEMPO_MAXIMO);
     const cortar = () => control.abort('cancelado');
