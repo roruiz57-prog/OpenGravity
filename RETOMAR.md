@@ -30,7 +30,7 @@
   reabre el cuadro que estaba abierto y el borrador del pedido se conserva. Hay botón "Pegar" y los campos
   de clave admiten el autocompletado del gestor de contraseñas.
 - Recuadro "Protege tus claves" en Ajustes de IA: tope de gasto en OpenRouter y restricción por API en Google.
-- **Generar con IA** (Gemini / OpenRouter), solo probado con respuestas simuladas: ver tarea 3.3.
+- **Generar con IA** (Gemini / OpenRouter), probado con llamadas reales con los dos proveedores (19/11/2026).
 - Adaptada a pantallas de celular, en vertical y en horizontal.
 
 ## 3. Tareas pendientes (en orden)
@@ -66,7 +66,7 @@
 3. Los datos del APK van aparte de los de la app del navegador: pasar diagramas con Guardar/Abrir archivo
    y pegar de nuevo las claves de IA.
 
-### 3.3 Probar la IA con claves reales
+### 3.3 Probar la IA con claves reales — HECHO (19/11/2026)
 - **19/11/2026:** el usuario cargó su clave de Google y "Probar y ver modelos" funcionó. Al generar, Google respondió
   error 5xx (servidor saturado). Se agregó: 2 reintentos automáticos (a los 3 s y 8 s) y el detalle de Google en el
   mensaje (`pruebas/prueba_ia_reintento.py`). Con el modelo **Gemini 3.1 Flash-Lite** generó bien un diagrama real
@@ -79,7 +79,7 @@
 - **19/11/2026, demora:** en el APK salió una vez "tardó demasiado en responder" (al reintentar funcionó). Ahora cada
   intento espera hasta 60 s; si se vence, reintenta una vez con el mismo modelo y después prueba un modelo más.
   Mientras espera, el estado muestra los segundos que van pasando.
-- Gemini ya se probó con llamadas reales (ver arriba). **OpenRouter** todavía solo se probó simulando las respuestas.
+- **HECHO (19/11/2026):** el usuario generó diagramas reales con **Gemini** y con **OpenRouter** (respaldo) y funcionan bien.
 - Para configurar en otro dispositivo, el usuario tiene que:
   1. Crear una clave gratis en https://aistudio.google.com/apikey.
   2. Pegarla en la app: botón **IA** → **Ajustes de IA** → **Probar y ver modelos** → **Guardar**.
@@ -89,7 +89,7 @@
 - Cosas para revisar con el uso real:
   - que la IA ubique bien los elementos, sin superponerlos;
   - que el modelo sugerido sea razonable;
-  - si OpenRouter acepta `response_format` con el modelo gratuito elegido.
+  - si OpenRouter acepta `response_format` con el modelo gratuito elegido (con el modelo que usó el usuario, funcionó).
 
 ### 3.4 Pruebas automáticas — HECHO (19/11/2026)
 - Todas en `pruebas/` (Python + Playwright, sin otras dependencias). Un solo comando, que levanta el servidor solo:
