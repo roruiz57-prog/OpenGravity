@@ -105,9 +105,11 @@
 
 ### 3.5 Proteger las claves de IA
 - **HECHO (19/11/2026):** el usuario puso un tope de gasto mínimo en sus claves de **OpenRouter**.
-- **PENDIENTE:** restringir la clave de **Google AI Studio** para que solo sirva para Gemini:
-  https://console.cloud.google.com/apis/credentials → abrir la clave → "Restricciones de API" → dejar solo
-  *Generative Language API*. **Por API, no por sitio web**: una restricción por sitio rompería el APK.
+- **HECHO (19/11/2026):** las dos claves de **Google AI Studio** (proyecto "Gemini Project",
+  `gen-lang-client-0591703445`; "Gemini API Key" del 2/4/2026 y "Gemini API Key 2" del 27/10/2026) ya estaban
+  restringidas a **Gemini API** y vinculadas a una cuenta de servicio (sistema nuevo de Google). "Restricciones de
+  aplicaciones" queda en **Ninguno** a propósito: por sitio web rompería el APK. La app usa una de esas dos claves,
+  compartida con la app de Transcripciones. No se modificó nada.
 - **HECHO (19/11/2026):** la regla ya está en el `CLAUDE.md` de usuario de la PC (sección "Credenciales",
   unificada con las reglas que ya había). Vale para todos sus proyectos de Claude Code.
 - **PENDIENTE (lo hace el usuario):** copiarla en sus **preferencias personales de claude.ai**
