@@ -39,7 +39,7 @@
 - Copiado a `main` con autorización del usuario. Vercel publica `diagramas-v7`.
 - Falta que el usuario lo pruebe en su celular: cerrar y abrir la app dos veces.
 
-### 3.2 App nativa de Android (APK) — PRIMER APK FIRMADO ARMADO (19/11/2026)
+### 3.2 App nativa de Android (APK) — INSTALADO EN EL CELULAR (19/11/2026)
 **Decisión del usuario (18/11/2026):** la llave nunca sale de su PC. Nada de secretos en GitHub (se borró
 `.github/workflows/apk.yml`). El APK se arma en la PC, que tiene Java (Temurin 21) y el SDK de Android Studio.
 
@@ -59,7 +59,7 @@
 - Primer APK firmado (versión 1.0.261119.1255) armado y copiado a Google Drive → OpenGravity → `OpenGravity.apk`.
 
 **Falta:**
-1. Que el usuario instale `OpenGravity.apk` en el celular (Samsung A22, Firefox) y lo pruebe.
+1. **HECHO (19/11/2026):** el usuario instaló `OpenGravity.apk` en el celular (Samsung A22) y lo usa.
 2. Para cada actualización: el usuario hace doble clic en `D:\VibeCoding\Diagramas multiplataforma\Armar APK.cmd`
    y escribe la contraseña; el script copia solo el APK a `G:\Mi unidad\OpenGravity` (desde el 19/11/2026).
    Decisión del usuario: NO guardar la contraseña (ni cifrada con Windows ni en archivo como Tareas y Finanzas).
