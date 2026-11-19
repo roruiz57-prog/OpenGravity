@@ -76,6 +76,9 @@
   sin cambiar el elegido en Ajustes. Si Google pide esperar poco (429 por minuto, ≤ 60 s) espera y reintenta;
   si pide más, es la cuota del día y muestra el error. El modelo sugerido de fábrica ahora es Flash-Lite.
   Varias claves que se turnan: descartado (un diagrama es un solo pedido; cambiar de clave no arregla la saturación).
+- **19/11/2026, demora:** en el APK salió una vez "tardó demasiado en responder" (al reintentar funcionó). Ahora cada
+  intento espera hasta 60 s; si se vence, reintenta una vez con el mismo modelo y después prueba un modelo más.
+  Mientras espera, el estado muestra los segundos que van pasando.
 - Hasta ahora solo se probó **simulando** las respuestas de Google y OpenRouter. Nunca se hizo una llamada real.
 - El usuario tiene que:
   1. Crear una clave gratis en https://aistudio.google.com/apikey.
@@ -123,7 +126,7 @@
 - **Antes de ejecutar algo, confirmar en una frase lo que se entendió.**
 - Trabajar en la rama de trabajo y **pedir autorización cada vez** antes de copiar a `main`.
   El usuario suele responder "Sí, copialo a main".
-- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v12`).
+- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v13`).
   Si no, el celular sigue mostrando la versión vieja.
 - Después de publicar, recordarle: "cierra la app y ábrela dos veces".
 - Probar en escritorio (1400×860) y celular (360×740) antes de proponer publicar.

@@ -5,7 +5,7 @@
 'use strict';
 window.IA = (() => {
   const CLAVE_AJUSTES = 'opengravity.ia.v1';
-  const TIEMPO_MAXIMO = 90000; // 90 s por intento
+  const TIEMPO_MAXIMO = () => window.IA_TIEMPO_PRUEBA || 60000; // 60 s por intento (las pruebas lo acortan)
   const PROVEEDORES = { gemini: 'Gemini (Google AI Studio)', openrouter: 'OpenRouter' };
 
   // ---------- Ajustes ----------
@@ -56,6 +56,7 @@ window.IA = (() => {
   // Si el proveedor está saturado (error 5xx, muy común en el nivel gratuito), reintenta solo dos veces.
   // Si llegó al límite por minuto (429 pidiendo esperar poco), espera lo que pide y reintenta.
   // Si pide esperar mucho o no dice cuánto, es la cuota del día: se muestra el error.
+  // Si no contesta a tiempo (demora pasajera de Google), reintenta una vez enseguida.
   const ESPERAS_REINTENTO = [3000, 8000];
   const ESPERA_LIMITE_MAXIMA = 60000;
   function esperar(ms, senal) {
@@ -66,12 +67,14 @@ window.IA = (() => {
     });
   }
   async function pedir(proveedor, url, opciones, senal) {
-    let saturado = 0, limite = 0;
+    let saturado = 0, limite = 0, demora = 0;
     for (;;) {
       try {
         return await pedirUnaVez(proveedor, url, opciones, senal);
       } catch (e) {
-        if (e.tipo === 'servidor' && saturado < ESPERAS_REINTENTO.length) {
+        if (e.tipo === 'tiempo' && demora < 1) {
+          demora++;
+        } else if (e.tipo === 'servidor' && saturado < ESPERAS_REINTENTO.length) {
           await esperar(ESPERAS_REINTENTO[saturado++], senal);
         } else if (e.tipo === 'limite' && e.esperaMs && e.esperaMs <= ESPERA_LIMITE_MAXIMA && limite < 2) {
           limite++;
@@ -84,7 +87,7 @@ window.IA = (() => {
   }
   async function pedirUnaVez(proveedor, url, opciones, senal) {
     const control = new AbortController();
-    const reloj = setTimeout(() => control.abort('tiempo'), TIEMPO_MAXIMO);
+    const reloj = setTimeout(() => control.abort('tiempo'), TIEMPO_MAXIMO());
     const cortar = () => control.abort('cancelado');
     if (senal) senal.addEventListener('abort', cortar);
     try {
@@ -101,7 +104,7 @@ window.IA = (() => {
       if (e instanceof ErrorIA) throw e;
       if (control.signal.aborted) {
         if (control.signal.reason === 'cancelado') throw new ErrorIA('Cancelado.', 'cancelado');
-        throw new ErrorIA(`${PROVEEDORES[proveedor]} tardó demasiado en responder.`, 'tiempo');
+        throw new ErrorIA(`${PROVEEDORES[proveedor]} tardó demasiado varias veces. Prueba de nuevo en un rato o elige otro modelo en Ajustes de IA.`, 'tiempo');
       }
       throw new ErrorIA(`No se pudo conectar con ${PROVEEDORES[proveedor]}. Revisa tu conexión a internet.`, 'red');
     } finally {
@@ -284,16 +287,17 @@ Reglas de diseño:
         } catch (e) {
           // Modelo saturado en Google: otra clave no sirve, otro modelo sí. Se prueban hasta dos de la
           // lista (sin cambiar el que eligió el usuario en Ajustes).
-          if (proveedor !== 'gemini' || e.tipo !== 'servidor') throw e;
+          // Si no contestó a tiempo se prueba un solo modelo más, para no hacer esperar varios minutos.
+          if (proveedor !== 'gemini' || !['servidor', 'tiempo'].includes(e.tipo)) throw e;
           const lista = await listarModelos('gemini', ajustes, senal);
-          const otros = modelosGeminiEnOrden(lista).filter((id) => id !== elegido).slice(0, 2);
+          const otros = modelosGeminiEnOrden(lista).filter((id) => id !== elegido).slice(0, e.tipo === 'tiempo' ? 1 : 2);
           let ultimo = e;
           for (const modelo of otros) {
-            alAvanzar(`${elegido} está saturado. Probando con ${modelo}…`);
+            alAvanzar(`${elegido} ${e.tipo === 'tiempo' ? 'no responde' : 'está saturado'}. Probando con ${modelo}…`);
             try {
-              return { ...(await armarCon(proveedor, modelo)), reemplazo: elegido };
+              return { ...(await armarCon(proveedor, modelo)), reemplazo: elegido, motivo: e.tipo };
             } catch (e2) {
-              if (e2.tipo !== 'servidor') throw e2;
+              if (!['servidor', 'tiempo'].includes(e2.tipo)) throw e2;
               ultimo = e2;
             }
           }

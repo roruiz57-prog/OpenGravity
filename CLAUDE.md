@@ -28,7 +28,8 @@ usarse en **Android y Windows** desde una sola base de código.
      a cada proveedor (`listarModelos()`); no hay nombres de modelo fijos en el código.
    - Modos: crear un diagrama nuevo (va a Mis diagramas) o modificar el abierto (se puede deshacer).
    - Si el modelo está saturado (5xx): 2 reintentos y luego hasta 2 modelos más de la lista (`modelosGeminiEnOrden()`,
-     Flash-Lite primero). 429 con espera corta: espera y reintenta. No se usan varias claves (decidido 19/11/2026).
+     Flash-Lite primero). 429 con espera corta: espera y reintenta.
+     Sin respuesta en 60 s: 1 reintento y luego 1 modelo más. No se usan varias claves (decidido 19/11/2026).
    - `prepararDiagramaIA()` en `app.js` corrige ids, completa campos y agranda formas para que entre el texto.
 
 ## Estructura

@@ -1524,12 +1524,17 @@
     generacion = new AbortController();
     trabajandoIA(true);
     recordarUI();
+    // Contador de segundos, para que se vea que la app sigue esperando a la IA.
+    const inicio = Date.now();
+    let paso = '';
+    const mostrarPaso = () => estadoIA(`${paso} ${Math.round((Date.now() - inicio) / 1000)} s`, 'cargando');
+    const contador = setInterval(mostrarPaso, 1000);
     try {
       const r = await window.IA.generar({
         pedido,
         actual: modificar ? doc : null,
         fondoClaro: fondoClaro(),
-        alAvanzar: (t) => estadoIA(t, 'cargando'),
+        alAvanzar: (t) => { paso = t; mostrarPaso(); },
         senal: generacion.signal
       });
       const nuevo = prepararDiagramaIA(r.diagrama, doc.bg);
@@ -1543,12 +1548,13 @@
       $('#ia-pedido').value = '';
       estadoIA('');
       avisar(`${modificar ? 'Diagrama modificado' : 'Diagrama creado'} con ${r.proveedor}` +
-        (r.reemplazo ? ` (${r.reemplazo} estaba saturado; usé ${r.modelo})` : ''));
+        (r.reemplazo ? ` (${r.reemplazo} ${r.motivo === 'tiempo' ? 'no respondía' : 'estaba saturado'}; usé ${r.modelo})` : ''));
     } catch (e) {
       if (e.tipo === 'cancelado') estadoIA('Cancelado.');
       else if (e.tipo === 'sin-clave') abrirAjustesIA('Pega al menos una clave para poder generar.');
       else estadoIA(e.message || 'No se pudo generar el diagrama.', 'error-ia');
     } finally {
+      clearInterval(contador);
       generacion = null;
       trabajandoIA(false);
       recordarUI();
