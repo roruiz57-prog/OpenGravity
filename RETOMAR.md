@@ -69,6 +69,11 @@
   error 5xx (servidor saturado). Se agregó: 2 reintentos automáticos (a los 3 s y 8 s) y el detalle de Google en el
   mensaje (`pruebas/prueba_ia_reintento.py`). Con el modelo **Gemini 3.1 Flash-Lite** generó bien un diagrama real
   (el modelo sugerido, un Flash sin "lite", estaba saturado). El usuario dice que el diagrama se ve bien.
+- **19/11/2026, ideas tomadas de la app de Transcripciones:** si el modelo sigue saturado tras los reintentos,
+  la app prueba sola hasta 2 modelos más de la lista en vivo (primero Flash-Lite, después Flash) y avisa cuál usó,
+  sin cambiar el elegido en Ajustes. Si Google pide esperar poco (429 por minuto, ≤ 60 s) espera y reintenta;
+  si pide más, es la cuota del día y muestra el error. El modelo sugerido de fábrica ahora es Flash-Lite.
+  Varias claves que se turnan: descartado (un diagrama es un solo pedido; cambiar de clave no arregla la saturación).
 - Hasta ahora solo se probó **simulando** las respuestas de Google y OpenRouter. Nunca se hizo una llamada real.
 - El usuario tiene que:
   1. Crear una clave gratis en https://aistudio.google.com/apikey.
@@ -116,7 +121,7 @@
 - **Antes de ejecutar algo, confirmar en una frase lo que se entendió.**
 - Trabajar en la rama de trabajo y **pedir autorización cada vez** antes de copiar a `main`.
   El usuario suele responder "Sí, copialo a main".
-- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v11`).
+- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v12`).
   Si no, el celular sigue mostrando la versión vieja.
 - Después de publicar, recordarle: "cierra la app y ábrela dos veces".
 - Probar en escritorio (1400×860) y celular (360×740) antes de proponer publicar.

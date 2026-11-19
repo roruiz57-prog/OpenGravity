@@ -34,6 +34,13 @@ window.IA = (() => {
   class ErrorIA extends Error {
     constructor(mensaje, tipo = 'otro') { super(mensaje); this.tipo = tipo; }
   }
+  // Cuánto pide esperar el proveedor antes de reintentar, en ms (Google lo manda en "RetryInfo").
+  function esperaPedida(datos, respuesta) {
+    const info = datos && datos.error && Array.isArray(datos.error.details)
+      ? datos.error.details.find((d) => /RetryInfo$/.test(d['@type'] || '')) : null;
+    const s = info ? parseFloat(info.retryDelay) : parseFloat(respuesta.headers.get('retry-after'));
+    return Number.isFinite(s) ? s * 1000 : 0;
+  }
   function errorHttp(proveedor, estado, detalle) {
     const nombre = PROVEEDORES[proveedor];
     const extra = detalle ? ` (${String(detalle).slice(0, 160)})` : '';
@@ -47,7 +54,10 @@ window.IA = (() => {
   }
 
   // Si el proveedor está saturado (error 5xx, muy común en el nivel gratuito), reintenta solo dos veces.
+  // Si llegó al límite por minuto (429 pidiendo esperar poco), espera lo que pide y reintenta.
+  // Si pide esperar mucho o no dice cuánto, es la cuota del día: se muestra el error.
   const ESPERAS_REINTENTO = [3000, 8000];
+  const ESPERA_LIMITE_MAXIMA = 60000;
   function esperar(ms, senal) {
     return new Promise((listo, fallo) => {
       if (senal && senal.aborted) return fallo(new ErrorIA('Cancelado.', 'cancelado'));
@@ -56,12 +66,19 @@ window.IA = (() => {
     });
   }
   async function pedir(proveedor, url, opciones, senal) {
-    for (let intento = 0; ; intento++) {
+    let saturado = 0, limite = 0;
+    for (;;) {
       try {
         return await pedirUnaVez(proveedor, url, opciones, senal);
       } catch (e) {
-        if (e.tipo !== 'servidor' || intento >= ESPERAS_REINTENTO.length) throw e;
-        await esperar(ESPERAS_REINTENTO[intento], senal);
+        if (e.tipo === 'servidor' && saturado < ESPERAS_REINTENTO.length) {
+          await esperar(ESPERAS_REINTENTO[saturado++], senal);
+        } else if (e.tipo === 'limite' && e.esperaMs && e.esperaMs <= ESPERA_LIMITE_MAXIMA && limite < 2) {
+          limite++;
+          await esperar(e.esperaMs + 1000, senal);
+        } else {
+          throw e;
+        }
       }
     }
   }
@@ -77,7 +94,7 @@ window.IA = (() => {
       try { datos = JSON.parse(texto); } catch (_) { /* respuesta no JSON */ }
       if (!r.ok) {
         const detalle = datos && datos.error ? (datos.error.message || datos.error.status || '') : texto.slice(0, 200);
-        throw errorHttp(proveedor, r.status, detalle);
+        throw Object.assign(errorHttp(proveedor, r.status, detalle), { esperaMs: esperaPedida(datos, r) });
       }
       return datos;
     } catch (e) {
@@ -115,13 +132,18 @@ window.IA = (() => {
   // Modelo sugerido cuando el usuario todavía no eligió uno.
   function modeloSugerido(proveedor, lista) {
     if (!lista.length) return '';
-    if (proveedor === 'gemini') {
-      const version = (id) => { const m = /gemini-(\d+(?:\.\d+)?)/.exec(id); return m ? parseFloat(m[1]) : 0; };
-      const flash = lista.filter((m) => /flash/i.test(m.id) && !/(lite|exp|preview|thinking|8b)/i.test(m.id));
-      const base = flash.length ? flash : lista;
-      return [...base].sort((a, b) => version(b.id) - version(a.id) || a.id.length - b.id.length)[0].id;
-    }
+    if (proveedor === 'gemini') return modelosGeminiEnOrden(lista)[0] || lista[0].id;
     return [...lista].sort((a, b) => (b.contexto || 0) - (a.contexto || 0))[0].id;
+  }
+  // Modelos estables de Gemini en orden de preferencia: primero Flash-Lite (en el nivel gratuito suele
+  // estar menos saturado), después Flash; dentro de cada familia, la versión más nueva primero.
+  function modelosGeminiEnOrden(lista) {
+    const version = (id) => { const m = /gemini-(\d+(?:\.\d+)?)/.exec(id); return m ? parseFloat(m[1]) : 0; };
+    const estable = (m) => !/(exp|preview|thinking|8b)/i.test(m.id);
+    const orden = (l) => [...l].sort((a, b) => version(b.id) - version(a.id) || a.id.length - b.id.length);
+    const lite = lista.filter((m) => /flash-lite/i.test(m.id) && estable(m));
+    const flash = lista.filter((m) => /flash/i.test(m.id) && !/lite/i.test(m.id) && estable(m));
+    return [...orden(lite), ...orden(flash)].map((m) => m.id);
   }
 
   // ---------- Instrucciones para el modelo ----------
@@ -170,8 +192,7 @@ Reglas de diseño:
   }
 
   // ---------- Llamadas a cada proveedor ----------
-  async function llamarGemini(ajustes, sistema, mensajes, senal) {
-    const modelo = ajustes.gemini.modelo;
+  async function llamarGemini(ajustes, sistema, mensajes, senal, modelo = ajustes.gemini.modelo) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelo)}:generateContent?key=${encodeURIComponent(ajustes.gemini.clave.trim())}`;
     const cuerpo = {
       systemInstruction: { parts: [{ text: sistema }] },
@@ -230,6 +251,23 @@ Reglas de diseño:
     if (!orden.length) throw new ErrorIA('Falta configurar una clave de IA.', 'sin-clave');
 
     const sistema = instrucciones(fondoClaro);
+    // Pide el diagrama a un modelo; si la respuesta no es JSON válido, se lo pide una vez más.
+    async function armarCon(proveedor, modelo) {
+      const mensajes = [{ rol: 'usuario', texto: mensajeUsuario(pedido, actual) }];
+      for (let intento = 1; intento <= 2; intento++) {
+        alAvanzar(`${PROVEEDORES[proveedor]} está armando el diagrama${intento > 1 ? ' (segundo intento)' : ''}…`);
+        const texto = proveedor === 'gemini'
+          ? await llamarGemini(ajustes, sistema, mensajes, senal, modelo)
+          : await llamarOpenRouter(ajustes, sistema, mensajes, senal);
+        try {
+          return { diagrama: interpretar(texto), proveedor: PROVEEDORES[proveedor], modelo };
+        } catch (e) {
+          if (intento === 2) throw e;
+          mensajes.push({ rol: 'asistente', texto: String(texto).slice(0, 4000) });
+          mensajes.push({ rol: 'usuario', texto: 'Tu respuesta no era un JSON válido con el formato pedido. Responde de nuevo SOLO con el objeto JSON completo.' });
+        }
+      }
+    }
     const fallas = [];
     for (const proveedor of orden) {
       try {
@@ -240,19 +278,26 @@ Reglas de diseño:
           if (!ajustes[proveedor].modelo) throw new ErrorIA(`No encontré modelos disponibles en ${PROVEEDORES[proveedor]}.`, 'modelo');
           guardarAjustes(ajustes);
         }
-        const mensajes = [{ rol: 'usuario', texto: mensajeUsuario(pedido, actual) }];
-        for (let intento = 1; intento <= 2; intento++) {
-          alAvanzar(`${PROVEEDORES[proveedor]} está armando el diagrama${intento > 1 ? ' (segundo intento)' : ''}…`);
-          const texto = proveedor === 'gemini'
-            ? await llamarGemini(ajustes, sistema, mensajes, senal)
-            : await llamarOpenRouter(ajustes, sistema, mensajes, senal);
-          try {
-            return { diagrama: interpretar(texto), proveedor: PROVEEDORES[proveedor], modelo: ajustes[proveedor].modelo };
-          } catch (e) {
-            if (intento === 2) throw e;
-            mensajes.push({ rol: 'asistente', texto: String(texto).slice(0, 4000) });
-            mensajes.push({ rol: 'usuario', texto: 'Tu respuesta no era un JSON válido con el formato pedido. Responde de nuevo SOLO con el objeto JSON completo.' });
+        const elegido = ajustes[proveedor].modelo;
+        try {
+          return await armarCon(proveedor, elegido);
+        } catch (e) {
+          // Modelo saturado en Google: otra clave no sirve, otro modelo sí. Se prueban hasta dos de la
+          // lista (sin cambiar el que eligió el usuario en Ajustes).
+          if (proveedor !== 'gemini' || e.tipo !== 'servidor') throw e;
+          const lista = await listarModelos('gemini', ajustes, senal);
+          const otros = modelosGeminiEnOrden(lista).filter((id) => id !== elegido).slice(0, 2);
+          let ultimo = e;
+          for (const modelo of otros) {
+            alAvanzar(`${elegido} está saturado. Probando con ${modelo}…`);
+            try {
+              return { ...(await armarCon(proveedor, modelo)), reemplazo: elegido };
+            } catch (e2) {
+              if (e2.tipo !== 'servidor') throw e2;
+              ultimo = e2;
+            }
           }
+          throw ultimo;
         }
       } catch (e) {
         if (e.tipo === 'cancelado') throw e;

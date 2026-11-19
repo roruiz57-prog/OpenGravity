@@ -1542,7 +1542,8 @@
       cuadroIA.hidden = true;
       $('#ia-pedido').value = '';
       estadoIA('');
-      avisar(`${modificar ? 'Diagrama modificado' : 'Diagrama creado'} con ${r.proveedor}`);
+      avisar(`${modificar ? 'Diagrama modificado' : 'Diagrama creado'} con ${r.proveedor}` +
+        (r.reemplazo ? ` (${r.reemplazo} estaba saturado; usé ${r.modelo})` : ''));
     } catch (e) {
       if (e.tipo === 'cancelado') estadoIA('Cancelado.');
       else if (e.tipo === 'sin-clave') abrirAjustesIA('Pega al menos una clave para poder generar.');
