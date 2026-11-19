@@ -35,7 +35,7 @@
 - Copiado a `main` con autorización del usuario. Vercel publica `diagramas-v7`.
 - Falta que el usuario lo pruebe en su celular: cerrar y abrir la app dos veces.
 
-### 3.2 App nativa de Android (APK) — SE ARMA EN LA PC DEL USUARIO, FALTA EL PRIMER APK FIRMADO
+### 3.2 App nativa de Android (APK) — PRIMER APK FIRMADO ARMADO (19/11/2026)
 **Decisión del usuario (18/11/2026):** la llave nunca sale de su PC. Nada de secretos en GitHub (se borró
 `.github/workflows/apk.yml`). El APK se arma en la PC, que tiene Java (Temurin 21) y el SDK de Android Studio.
 
@@ -52,9 +52,11 @@
   (`app.opengravity.diagramas.prueba`), que convive con la definitiva. Copiado a Google Drive →
   OpenGravity → `OpenGravity-prueba.apk` (G:\Mi unidad\OpenGravity en la PC).
 
+- Primer APK firmado (versión 1.0.261119.1255) armado y copiado a Google Drive → OpenGravity → `OpenGravity.apk`.
+
 **Falta:**
-1. El usuario corre `armar-apk.ps1` en la PC (cuando esté frente a ella).
-2. Copiar `OpenGravity.apk` a `G:\Mi unidad\OpenGravity` e instalarlo en el celular (Samsung A22, Firefox).
+1. Que el usuario instale `OpenGravity.apk` en el celular (Samsung A22, Firefox) y lo pruebe.
+2. Para cada actualización: el usuario corre `armar-apk.ps1` y Claude copia el APK a `G:\Mi unidad\OpenGravity`.
 3. Los datos del APK van aparte de los de la app del navegador: pasar diagramas con Guardar/Abrir archivo
    y pegar de nuevo las claves de IA.
 
