@@ -59,6 +59,8 @@ usarse en **Android y Windows** desde una sola base de código.
   y `scripts/armar-apk.ps1` (arma el APK firmado en la PC del usuario). La llave vive SOLO en su PC
   (`D:\VibeCoding\Llaves\OpenGravity`), nunca en el repo ni en GitHub.
   `.vercelignore` deja fuera de Vercel todo lo del APK.
+  En el APK, guardar/exportar usa los componentes Filesystem (guarda en Documentos/OpenGravity) y Share
+  (`descargar()` en `app.js`, que detecta el APK con `Capacitor.isNativePlatform()`); en el navegador, descarga normal.
   Al cambiar archivos de la app, subir la versión de `CACHE` en `sw.js`.
 
 ## Formato del diagrama (`doc`)

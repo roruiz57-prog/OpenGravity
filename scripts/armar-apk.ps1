@@ -28,7 +28,13 @@ $env:VERSION_APP = '1.0.' + $ahora.ToString('yyMMdd.HHmm')
 
 try {
     Set-Location $repo
-    if (-not (Test-Path 'node_modules')) { npm ci; if ($LASTEXITCODE -ne 0) { throw 'Fallo npm ci' } }
+    # Reinstalar los componentes si no están o si la lista cambió desde la última vez (por ejemplo, al
+    # agregar Filesystem y Share el 19/11/2026). npm deja su copia de la lista en node_modules\.package-lock.json.
+    $instalada = 'node_modules\.package-lock.json'
+    if (-not (Test-Path $instalada) -or ((Get-Item 'package-lock.json').LastWriteTime -gt (Get-Item $instalada).LastWriteTime)) {
+        npm ci
+        if ($LASTEXITCODE -ne 0) { throw 'Fallo npm ci' }
+    }
     npm run android:sync
     if ($LASTEXITCODE -ne 0) { throw 'Fallo la preparacion de la app (android:sync)' }
 

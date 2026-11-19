@@ -63,7 +63,12 @@
 2. Para cada actualización: el usuario hace doble clic en `D:\VibeCoding\Diagramas multiplataforma\Armar APK.cmd`
    y escribe la contraseña; el script copia solo el APK a `G:\Mi unidad\OpenGravity` (desde el 19/11/2026).
    Decisión del usuario: NO guardar la contraseña (ni cifrada con Windows ni en archivo como Tareas y Finanzas).
-3. Los datos del APK van aparte de los de la app del navegador: pasar diagramas con Guardar/Abrir archivo
+3. **Guardar y exportar en el APK (19/11/2026):** antes no guardaba nada (Android ignora las descargas del
+   navegador dentro de una app; el usuario lo comprobó). Ahora usa los componentes oficiales Filesystem y Share
+   de Capacitor: guarda en **Documentos/OpenGravity** del celular y el botón Compartir funciona. Si Android no
+   deja escribir ahí, abre la lista de compartir. Probado solo **simulando** el APK; **falta armar el APK nuevo en
+   la PC** (el script ya reinstala los componentes si cambió la lista) **y probarlo en el celular**.
+4. Los datos del APK van aparte de los de la app del navegador: pasar diagramas con Guardar/Abrir archivo
    y pegar de nuevo las claves de IA.
 
 ### 3.3 Probar la IA con claves reales — HECHO (19/11/2026)
@@ -92,6 +97,9 @@
   - si OpenRouter acepta `response_format` con el modelo gratuito elegido (con el modelo que usó el usuario, funcionó).
 
 ### 3.4 Pruebas automáticas — HECHO (19/11/2026)
+- **19/11/2026, en la sesión en la nube:** `prueba_alinear.py` falló en distintos pasos de una corrida a otra,
+  también sin cambios en la app (clics que caen mientras se redibuja). Las otras 4 pasan. Revisar en la PC si
+  allá pasa; si falla, agregar esperas en la prueba.
 - Todas en `pruebas/` (Python + Playwright, sin otras dependencias). Un solo comando, que levanta el servidor solo:
   `python pruebas/correr_todas.py`. **Correrlo antes de proponer publicar.**
 - `prueba_editor.py`: crear, conectar, mover, deshacer y exportar PNG (escritorio y celular); las 8 formas, bordes y
@@ -138,7 +146,7 @@
   sube a la misma rama.
 - Trabajar en la rama de trabajo y **pedir autorización cada vez** antes de copiar a `main`.
   El usuario suele responder "Sí, copialo a main".
-- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v13`).
+- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v14`).
   Si no, el celular sigue mostrando la versión vieja.
 - Después de publicar, recordarle: "cierra la app y ábrela dos veces".
 - Probar en escritorio (1400×860) y celular (360×740) antes de proponer publicar.

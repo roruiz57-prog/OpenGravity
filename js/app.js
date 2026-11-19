@@ -1175,7 +1175,47 @@
         contenido(true) + '</svg>'
     };
   }
-  function descargar(blob, nombre) {
+  // En el APK (Capacitor) Android ignora las descargas del navegador: ahí se guarda con el sistema
+  // de archivos de Android, en Documentos/OpenGravity. En el navegador, descarga normal.
+  const enAPK = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const CARPETA_APK = 'OpenGravity';
+  function pluginAPK(nombre) {
+    const C = window.Capacitor;
+    return (C.Plugins && C.Plugins[nombre]) || (C.registerPlugin && C.registerPlugin(nombre));
+  }
+  function blobABase64(blob) {
+    return new Promise((resolver, rechazar) => {
+      const r = new FileReader();
+      r.onload = () => resolver(String(r.result).split(',')[1] || '');
+      r.onerror = () => rechazar(r.error);
+      r.readAsDataURL(blob);
+    });
+  }
+  // Guarda el archivo y devuelve dónde quedó (texto para el aviso).
+  async function descargar(blob, nombre) {
+    if (enAPK) {
+      const data = await blobABase64(blob);
+      try {
+        await pluginAPK('Filesystem').writeFile({ path: `${CARPETA_APK}/${nombre}`, data, directory: 'DOCUMENTS', recursive: true });
+        return `en Documentos/${CARPETA_APK}`;
+      } catch (_) {
+        // Si Android no deja escribir en Documentos, se ofrece compartirlo (Drive, WhatsApp, correo…).
+        await compartirArchivoAPK(data, nombre);
+        return null; // se abrió la lista de compartir
+      }
+    }
+    descargarEnNavegador(blob, nombre);
+    return 'en Descargas';
+  }
+  // Aviso después de guardar: dónde quedó, o que elija en la lista de compartir.
+  function avisarGuardado(texto, donde) {
+    avisar(donde ? `${texto} ${donde}` : 'Elige dónde guardarlo o enviarlo');
+  }
+  async function compartirArchivoAPK(base64, nombre) {
+    const r = await pluginAPK('Filesystem').writeFile({ path: nombre, data: base64, directory: 'CACHE' });
+    await pluginAPK('Share').share({ title: doc.name, files: [r.uri] });
+  }
+  function descargarEnNavegador(blob, nombre) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -1243,38 +1283,45 @@
   async function exportar(formato) {
     const transparente = $('#exp-transparente').checked && ['png', 'webp', 'svg'].includes(formato);
     try {
-      if (formato === 'svg') return exportarSVG(transparente);
+      if (formato === 'svg') return await exportarSVG(transparente);
       if (formato === 'compartir') return compartir();
       if (formato === 'pdf') {
         const r = await generarImagen('image/jpeg', 0.92);
         const jpg = new Uint8Array(await r.blob.arrayBuffer());
         // Tamaño de página en puntos (1 px de pantalla = 0,75 pt).
-        descargar(crearPDF(jpg, r.ancho, r.alto, +(r.w * 0.75).toFixed(2), +(r.h * 0.75).toFixed(2)), nombreArchivo() + '.pdf');
-        return avisar('PDF exportado');
+        const donde = await descargar(crearPDF(jpg, r.ancho, r.alto, +(r.w * 0.75).toFixed(2), +(r.h * 0.75).toFixed(2)), nombreArchivo() + '.pdf');
+        return avisarGuardado('PDF guardado', donde);
       }
       const f = FORMATOS[formato];
       const r = await generarImagen(f.tipo, f.calidad, transparente);
-      descargar(r.blob, `${nombreArchivo()}.${formato}`);
-      avisar(`Imagen ${f.nombre} exportada`);
+      const donde = await descargar(r.blob, `${nombreArchivo()}.${formato}`);
+      avisarGuardado(`Imagen ${f.nombre} guardada`, donde);
     } catch (_) {
       avisar('No se pudo exportar; prueba con otro formato');
     }
   }
-  function exportarSVG(transparente) {
-    descargar(new Blob([svgExportable(transparente).texto], { type: 'image/svg+xml' }), nombreArchivo() + '.svg');
-    avisar('Imagen SVG exportada');
+  async function exportarSVG(transparente) {
+    const donde = await descargar(new Blob([svgExportable(transparente).texto], { type: 'image/svg+xml' }), nombreArchivo() + '.svg');
+    avisarGuardado('Imagen SVG guardada', donde);
   }
   async function compartir() {
     try {
-      const archivo = new File([(await generarImagen('image/png')).blob], nombreArchivo() + '.png', { type: 'image/png' });
+      const blob = (await generarImagen('image/png')).blob;
+      if (enAPK) return await compartirArchivoAPK(await blobABase64(blob), nombreArchivo() + '.png');
+      const archivo = new File([blob], nombreArchivo() + '.png', { type: 'image/png' });
       await navigator.share({ files: [archivo], title: doc.name });
     } catch (err) {
-      if (err && err.name !== 'AbortError') avisar('No se pudo compartir; usa Exportar');
+      const cancelado = err && (err.name === 'AbortError' || /cancel/i.test(err.message || ''));
+      if (!cancelado) avisar('No se pudo compartir; usa Exportar');
     }
   }
-  function guardarArchivo() {
-    descargar(new Blob([JSON.stringify(doc, null, 2)], { type: 'application/json' }), nombreArchivo() + '.diagrama.json');
-    avisar('Archivo guardado');
+  async function guardarArchivo() {
+    try {
+      const donde = await descargar(new Blob([JSON.stringify(doc, null, 2)], { type: 'application/json' }), nombreArchivo() + '.diagrama.json');
+      avisarGuardado('Archivo guardado', donde);
+    } catch (_) {
+      avisar('No se pudo guardar el archivo');
+    }
   }
   $('#archivo').addEventListener('change', async (ev) => {
     const f = ev.target.files && ev.target.files[0];
@@ -1298,7 +1345,7 @@
   $('#b-menu').addEventListener('click', (ev) => { ev.stopPropagation(); cerrarFormas(); menu.hidden = !menu.hidden; });
   document.addEventListener('pointerdown', (ev) => { if (!menu.hidden && !menu.contains(ev.target) && !$('#b-menu').contains(ev.target)) cerrarMenu(); });
   try {
-    if (navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.png', { type: 'image/png' })] })) $('#f-compartir').hidden = false;
+    if (enAPK || (navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.png', { type: 'image/png' })] }))) $('#f-compartir').hidden = false;
   } catch (_) { /* sin compartir */ }
   try {
     const c = document.createElement('canvas');
