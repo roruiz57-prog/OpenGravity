@@ -60,7 +60,9 @@
 
 **Falta:**
 1. Que el usuario instale `OpenGravity.apk` en el celular (Samsung A22, Firefox) y lo pruebe.
-2. Para cada actualización: el usuario corre `armar-apk.ps1` y Claude copia el APK a `G:\Mi unidad\OpenGravity`.
+2. Para cada actualización: el usuario hace doble clic en `D:\VibeCoding\Diagramas multiplataforma\Armar APK.cmd`
+   y escribe la contraseña; el script copia solo el APK a `G:\Mi unidad\OpenGravity` (desde el 19/11/2026).
+   Decisión del usuario: NO guardar la contraseña (ni cifrada con Windows ni en archivo como Tareas y Finanzas).
 3. Los datos del APK van aparte de los de la app del navegador: pasar diagramas con Guardar/Abrir archivo
    y pegar de nuevo las claves de IA.
 

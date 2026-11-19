@@ -1,4 +1,4 @@
-# Arma el APK firmado de OpenGravity en esta PC. La llave no sale de la maquina.
+# Arma el APK firmado de OpenGravity en esta PC y lo copia a Google Drive. La llave no sale de la maquina.
 # La contrasena se pide sin mostrarla y solo vive mientras corre este script.
 # Uso:  powershell -ExecutionPolicy Bypass -File scripts\armar-apk.ps1
 
@@ -6,6 +6,7 @@ $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 $llave = 'D:\VibeCoding\Llaves\OpenGravity\opengravity.jks'
 $salida = Join-Path (Split-Path $repo -Parent) 'APK'
+$drive = 'G:\Mi unidad\OpenGravity'
 
 if (-not (Test-Path $llave)) {
     Write-Host "No esta la llave en $llave. Crearla con scripts\crear-llave-firma.ps1." -ForegroundColor Red
@@ -42,6 +43,12 @@ try {
     Copy-Item $apk $destino -Force
     Write-Host ''
     Write-Host "APK listo: $destino  (version $env:VERSION_APP)" -ForegroundColor Green
+    if (Test-Path $drive) {
+        Copy-Item $apk (Join-Path $drive 'OpenGravity.apk') -Force
+        Write-Host "Copiado a Google Drive: $drive\OpenGravity.apk (puede tardar un minuto en sincronizar)" -ForegroundColor Green
+    } else {
+        Write-Host "No encontre la carpeta de Drive ($drive): copia el APK a mano." -ForegroundColor Yellow
+    }
 }
 catch {
     Write-Host $_ -ForegroundColor Red
