@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
-// Firma del APK: la llave NUNCA se guarda en el repositorio. Solo existe en los "secretos"
-// de GitHub y, mientras se arma el APK, en un archivo temporal que se borra al terminar.
+// Firma del APK: la llave NUNCA se guarda en el repositorio ni se sube a ningún lado.
+// Vive en la PC del usuario (D:\VibeCoding\Llaves\OpenGravity) y la usa scripts/armar-apk.ps1.
 def llave = System.getenv('ANDROID_KEYSTORE_FILE')
 def conFirma = llave && file(llave).exists()
 
@@ -12,8 +12,8 @@ android {
         applicationId "app.opengravity.diagramas"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        // Cada APK que arma GitHub tiene un número mayor, para que Android lo acepte como actualización.
-        versionCode((System.getenv('GITHUB_RUN_NUMBER') ?: '1') as Integer)
+        // Cada APK tiene un número mayor (fecha y hora del armado), para que Android lo acepte como actualización.
+        versionCode((System.getenv('VERSION_CODE') ?: '1') as Integer)
         versionName(System.getenv('VERSION_APP') ?: '1.0')
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
@@ -33,6 +33,10 @@ android {
         }
     }
     buildTypes {
+        // Versión de prueba: otra app ("OpenGravity (prueba)") que convive con la definitiva.
+        debug {
+            applicationIdSuffix ".prueba"
+        }
         release {
             if (conFirma) signingConfig signingConfigs.release
             minifyEnabled false

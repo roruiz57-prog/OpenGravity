@@ -2,7 +2,7 @@
 
 > Leer este archivo al empezar un chat nuevo. Junto con `CLAUDE.md` (decisiones, estructura del
 > código y formato de los diagramas) alcanza para seguir sin la conversación anterior.
-> Última actualización: 18 de noviembre de 2026.
+> Última actualización: 18 de noviembre de 2026 (APK).
 
 ## 1. Dónde está todo
 
@@ -35,39 +35,28 @@
 - Copiado a `main` con autorización del usuario. Vercel publica `diagramas-v7`.
 - Falta que el usuario lo pruebe en su celular: cerrar y abrir la app dos veces.
 
-### 3.2 App nativa de Android (APK) — LISTA PARA ARMAR, FALTA LA LLAVE DE FIRMA
-**Ya está hecho, sin la llave:**
-- Proyecto Capacitor 8.6.0 (`package.json`, `capacitor.config.json`, carpeta `android/`), con los íconos de la app.
-- `npm run android:sync` copia la app a `www/` y la pasa a `android/`.
-- `android/app/build.gradle` firma leyendo **variables de entorno**. No hay llaves ni contraseñas en el repo.
-- `.github/workflows/apk.yml` arma el APK en GitHub en cada push a `main` (o a mano desde la pestaña Actions)
-  y lo publica en **Releases** como `OpenGravity.apk`. **Sin la llave cargada termina en verde con el aviso
-  "Falta la llave de firma" y no arma nada.**
-- `.vercelignore` evita que Vercel publique lo del APK.
+### 3.2 App nativa de Android (APK) — SE ARMA EN LA PC DEL USUARIO, FALTA EL PRIMER APK FIRMADO
+**Decisión del usuario (18/11/2026):** la llave nunca sale de su PC. Nada de secretos en GitHub (se borró
+`.github/workflows/apk.yml`). El APK se arma en la PC, que tiene Java (Temurin 21) y el SDK de Android Studio.
 
-**Lo que falta: crear la llave EN LA PC DEL USUARIO** (decisión del usuario: que nunca pase por la nube de
-Claude ni quede en el repo). En su PC, con el repo clonado y Claude Code abierto, pedir:
-1. Comprobar que haya Java (`keytool -help`). Si no hay, instalar Temurin 21 (adoptium.net) o usar el de Android Studio.
-2. Crear la llave **fuera de la carpeta del repositorio**, por ejemplo en Documentos. El usuario escribe las
-   contraseñas en la terminal; **nunca en el chat**:
-   `keytool -genkeypair -v -keystore opengravity.jks -alias opengravity -keyalg RSA -keysize 2048 -validity 10000`
-3. Convertirla a texto base64. En Windows PowerShell:
-   `[Convert]::ToBase64String([IO.File]::ReadAllBytes("opengravity.jks")) | Set-Clipboard`
-4. En GitHub → repo OpenGravity → Settings → Secrets and variables → Actions → New repository secret, crear:
-   - `ANDROID_KEYSTORE_BASE64`: pegar el texto del paso 3.
-   - `ANDROID_KEYSTORE_PASSWORD`: la contraseña del almacén.
-   - `ANDROID_KEY_ALIAS`: `opengravity`.
-   - `ANDROID_KEY_PASSWORD`: la contraseña de la llave (si no pidió otra, es la misma).
-5. Guardar `opengravity.jks` y las contraseñas en el **gestor de contraseñas**, como adjunto o nota segura.
-   Después borrar el `.jks` de la PC y **vaciar el portapapeles**.
-   **Si se pierde la llave no se puede actualizar el APK** (habría que exportar los diagramas, desinstalar y reinstalar).
-6. GitHub → Actions → "APK de Android" → **Run workflow**. Al terminar, el APK queda en **Releases**.
-7. En el celular: entrar a GitHub (el repo es privado, hay que iniciar sesión) → Releases → bajar
-   `OpenGravity.apk` → permitir "instalar apps de orígenes desconocidos" → instalar.
-   Los datos del APK van aparte de los de la app de Chrome: pasar los diagramas con Guardar archivo y
-   Abrir archivo, y pegar de nuevo las claves de IA.
+**Hecho:**
+- Proyecto Capacitor 8.6.0 (`package.json`, `capacitor.config.json`, carpeta `android/`), con los íconos.
+- Llave creada con `scripts/crear-llave-firma.ps1` en `D:\VibeCoding\Llaves\OpenGravity\opengravity.jks`
+  (alias `opengravity`, una sola contraseña). Copia del `.jks` y la contraseña en el gestor de contraseñas
+  del usuario, entrada "OpenGravity – Llave de firma del APK". **Si se pierde, no se puede actualizar el APK.**
+- `scripts/armar-apk.ps1`: pide la contraseña oculta, arma el APK firmado (~7 min) y lo deja en
+  `D:\VibeCoding\Diagramas multiplataforma\APK\OpenGravity.apk`. El número de versión sale de la fecha y hora.
+  **Lo corre el usuario en su PowerShell** (Claude no puede escribir la contraseña).
+- Armado de prueba sin firmar: funciona.
+- **APK de prueba** (`assembleDebug`, llave de prueba de Android): es otra app, "OpenGravity (prueba)"
+  (`app.opengravity.diagramas.prueba`), que convive con la definitiva. Copiado a Google Drive →
+  OpenGravity → `OpenGravity-prueba.apk` (G:\Mi unidad\OpenGravity en la PC).
 
-**Nunca se probó un armado real del APK.** Puede fallar la primera vez: revisar el registro en Actions.
+**Falta:**
+1. El usuario corre `armar-apk.ps1` en la PC (cuando esté frente a ella).
+2. Copiar `OpenGravity.apk` a `G:\Mi unidad\OpenGravity` e instalarlo en el celular (Samsung A22, Firefox).
+3. Los datos del APK van aparte de los de la app del navegador: pasar diagramas con Guardar/Abrir archivo
+   y pegar de nuevo las claves de IA.
 
 ### 3.3 Probar la IA con claves reales
 - Hasta ahora solo se probó **simulando** las respuestas de Google y OpenRouter. Nunca se hizo una llamada real.

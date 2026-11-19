@@ -41,7 +41,8 @@ usarse en **Android y Windows** desde una sola base de código.
 - `js/plantillas.js` — plantillas (`arnes` = diagrama "Arnés del agente", `blanco`).
 - `manifest.webmanifest`, `sw.js`, `icons/` — instalación y modo sin conexión.
 - **APK de Android (Capacitor)**: `package.json`, `capacitor.config.json`, `android/`, `scripts/preparar-www.mjs`
-  y `.github/workflows/apk.yml`. La llave de firma vive SOLO en los secretos de GitHub (`ANDROID_*`), nunca en el repo.
+  y `scripts/armar-apk.ps1` (arma el APK firmado en la PC del usuario). La llave vive SOLO en su PC
+  (`D:\VibeCoding\Llaves\OpenGravity`), nunca en el repo ni en GitHub.
   `.vercelignore` deja fuera de Vercel todo lo del APK.
   Al cambiar archivos de la app, subir la versión de `CACHE` en `sw.js`.
 
