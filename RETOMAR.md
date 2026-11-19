@@ -91,20 +91,17 @@
   - que el modelo sugerido sea razonable;
   - si OpenRouter acepta `response_format` con el modelo gratuito elegido.
 
-### 3.4 Guardar las pruebas automáticas en el repositorio
-- Ya hay una: `pruebas/prueba_alinear.py` (Python + Playwright) para guías y selección múltiple.
-  Se corre con `python -m http.server 8765` y `python pruebas/prueba_alinear.py`. Falta rehacer las demás.
-- Las pruebas con Playwright se escribieron en una carpeta temporal de la sesión y **se perdieron**.
-  Rehacerlas dentro del repo, por ejemplo en `pruebas/`. Lo que deben cubrir:
-  - editor básico: crear, conectar, mover, deshacer y exportar PNG;
-  - las 8 formas y los bordes; las flechas tocan el borde real de cada forma;
-  - exportar en todos los formatos (validar el PDF con `pdfinfo`);
-  - mover grupos con su contenido;
-  - los 8 fondos, el cambio de colores en fondos claros y el PNG transparente;
-  - Mis diagramas: migración desde la clave vieja, crear, renombrar, duplicar, borrar e importar;
-  - IA simulada con `page.route()`: sin clave, lista de modelos, crear, reintento, respaldo y error.
-- Cómo correrlas: levantar un servidor local (`python3 -m http.server 8765`) y, en el entorno de Claude,
-  usar `NODE_PATH=$(npm root -g) node pruebas/<archivo>.js`.
+### 3.4 Pruebas automáticas — HECHO (19/11/2026)
+- Todas en `pruebas/` (Python + Playwright, sin otras dependencias). Un solo comando, que levanta el servidor solo:
+  `python pruebas/correr_todas.py`. **Correrlo antes de proponer publicar.**
+- `prueba_editor.py`: crear, conectar, mover, deshacer y exportar PNG (escritorio y celular); las 8 formas, bordes y
+  flechas que salen del borde real; grupos; los 8 fondos y el cambio de colores; exportar PNG (normal y
+  transparente), JPG, WebP, SVG y PDF (el PDF se valida por dentro, sin `pdfinfo`).
+- `prueba_biblioteca.py`: migración desde la clave vieja, crear, abrir, renombrar, duplicar, borrar, guardar e importar.
+- `prueba_ia.py`: sin clave, lista de modelos, crear, modificar y deshacer, respuesta rota, respaldo y error.
+- `prueba_ia_reintento.py`: saturación, demora, límite por minuto, cuota del día y modelo sugerido.
+- `prueba_alinear.py`: guías magnéticas y selección múltiple.
+- `comun.py`: funciones compartidas. Las capturas van a `pruebas/capturas/` (ignorada por git).
 
 ## 4. Ideas que el usuario vio y todavía no eligió
 - Cambiar el color de varias formas elegidas a la vez (la selección múltiple ya existe).

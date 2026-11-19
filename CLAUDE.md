@@ -82,6 +82,8 @@ Necesita un servidor local (el modo sin conexión no funciona abriendo el archiv
 - Con Node.js: `npx serve .`
 Para instalarla en el celular hace falta publicarla en **https** (por ejemplo GitHub Pages).
 
+**Pruebas automáticas:** `python pruebas/correr_todas.py` (levanta el servidor solo). Correrlas antes de publicar.
+
 ## Próximos pasos sugeridos
 - Publicar en GitHub Pages para instalarla en Android.
 - Versión 2: IA (ver arriba).

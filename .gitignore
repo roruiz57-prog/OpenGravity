@@ -8,3 +8,4 @@ www/
 *.keystore
 # Capturas que generan las pruebas
 pruebas/capturas/
+__pycache__/
