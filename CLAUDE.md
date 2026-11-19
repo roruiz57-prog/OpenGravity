@@ -11,6 +11,18 @@ usarse en **Android y Windows** desde una sola base de código.
   sin jerga, de forma directa. Antes de ejecutar algo, confirmar en una frase lo entendido.
 - La app es **solo para uso personal** (no hay usuarios externos).
 
+## Seguridad de credenciales (regla prioritaria del usuario, vale para todo)
+- **Nunca subir a GitHub ni a ningún servicio en la nube** claves de API, contraseñas, llaves de firma
+  (`.jks`, `.keystore`) ni archivos con secretos. Viven solo en los dispositivos del usuario y en su
+  gestor de contraseñas. (`.gitignore` ya excluye `*.jks` y `*.keystore`.)
+- **Nunca pedirle que pegue credenciales en el chat.** Si un paso las necesita, las escribe él en la
+  terminal (oculto) o directamente en la app.
+- **Antes de cada subida a GitHub**, revisar que no vaya ningún secreto. El código sin secretos **sí se
+  sube**: si queda solo en la PC, se pierde si le pasa algo.
+- El proyecto se trabaja desde **dos lugares** (sesiones en la nube y Claude Code en su PC) que suben a la
+  misma rama. **Antes de empezar, traer lo último de GitHub** (`git fetch` / `git pull`) para no pisar
+  el trabajo del otro lado.
+
 ## Decisiones tomadas (no volver a discutir salvo que el usuario lo pida)
 1. **PWA** (app web instalable). Sin frameworks ni paso de compilación:
    HTML + CSS + JavaScript puro. Se instala desde Chrome (Android) o Edge/Chrome (Windows).
