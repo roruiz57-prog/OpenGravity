@@ -108,10 +108,10 @@
 - **PENDIENTE:** restringir la clave de **Google AI Studio** para que solo sirva para Gemini:
   https://console.cloud.google.com/apis/credentials → abrir la clave → "Restricciones de API" → dejar solo
   *Generative Language API*. **Por API, no por sitio web**: una restricción por sitio rompería el APK.
-- **PENDIENTE (lo hace el usuario):** copiar la regla de seguridad de `CLAUDE.md` en
-  1. su `CLAUDE.md` de usuario en la PC (`C:\Users\<usuario>\.claude\CLAUDE.md`), para que valga en todos sus
-     proyectos de Claude Code;
-  2. sus **preferencias personales de claude.ai** (Configuración → General/Perfil), para la web y el celular.
+- **HECHO (19/11/2026):** la regla ya está en el `CLAUDE.md` de usuario de la PC (sección "Credenciales",
+  unificada con las reglas que ya había). Vale para todos sus proyectos de Claude Code.
+- **PENDIENTE (lo hace el usuario):** copiarla en sus **preferencias personales de claude.ai**
+  (Configuración → General/Perfil), para la web y el celular.
 
 ## 4. Ideas que el usuario vio y todavía no eligió
 - Cambiar el color de varias formas elegidas a la vez (la selección múltiple ya existe).
