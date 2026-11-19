@@ -2,7 +2,7 @@
 
 > Leer este archivo al empezar un chat nuevo. Junto con `CLAUDE.md` (decisiones, estructura del
 > código y formato de los diagramas) alcanza para seguir sin la conversación anterior.
-> Última actualización: 18 de noviembre de 2026 (APK).
+> Última actualización: 19 de noviembre de 2026 (seguridad de claves).
 
 ## 1. Dónde está todo
 
@@ -79,8 +79,8 @@
 - **19/11/2026, demora:** en el APK salió una vez "tardó demasiado en responder" (al reintentar funcionó). Ahora cada
   intento espera hasta 60 s; si se vence, reintenta una vez con el mismo modelo y después prueba un modelo más.
   Mientras espera, el estado muestra los segundos que van pasando.
-- Hasta ahora solo se probó **simulando** las respuestas de Google y OpenRouter. Nunca se hizo una llamada real.
-- El usuario tiene que:
+- Gemini ya se probó con llamadas reales (ver arriba). **OpenRouter** todavía solo se probó simulando las respuestas.
+- Para configurar en otro dispositivo, el usuario tiene que:
   1. Crear una clave gratis en https://aistudio.google.com/apikey.
   2. Pegarla en la app: botón **IA** → **Ajustes de IA** → **Probar y ver modelos** → **Guardar**.
   3. Opcional: pegar también la clave de OpenRouter (https://openrouter.ai/keys) como respaldo.
@@ -106,6 +106,16 @@
 - Cómo correrlas: levantar un servidor local (`python3 -m http.server 8765`) y, en el entorno de Claude,
   usar `NODE_PATH=$(npm root -g) node pruebas/<archivo>.js`.
 
+### 3.5 Proteger las claves de IA
+- **HECHO (19/11/2026):** el usuario puso un tope de gasto mínimo en sus claves de **OpenRouter**.
+- **PENDIENTE:** restringir la clave de **Google AI Studio** para que solo sirva para Gemini:
+  https://console.cloud.google.com/apis/credentials → abrir la clave → "Restricciones de API" → dejar solo
+  *Generative Language API*. **Por API, no por sitio web**: una restricción por sitio rompería el APK.
+- **PENDIENTE (lo hace el usuario):** copiar la regla de seguridad de `CLAUDE.md` en
+  1. su `CLAUDE.md` de usuario en la PC (`C:\Users\<usuario>\.claude\CLAUDE.md`), para que valga en todos sus
+     proyectos de Claude Code;
+  2. sus **preferencias personales de claude.ai** (Configuración → General/Perfil), para la web y el celular.
+
 ## 4. Ideas que el usuario vio y todavía no eligió
 - Cambiar el color de varias formas elegidas a la vez (la selección múltiple ya existe).
 - **Flechas curvas o en ángulo recto**, como en los organigramas.
@@ -124,6 +134,9 @@
 ## 6. Forma de trabajar con el usuario
 - No es programador (practica *vibecoding*). Responder en español latinoamericano, directo y sin jerga.
 - **Antes de ejecutar algo, confirmar en una frase lo que se entendió.**
+- **Seguridad de credenciales es prioridad:** ver la regla en `CLAUDE.md`. Nada de secretos en GitHub ni en el chat.
+- **Antes de trabajar, traer lo último de GitHub:** el usuario también trabaja con Claude Code en su PC y
+  sube a la misma rama.
 - Trabajar en la rama de trabajo y **pedir autorización cada vez** antes de copiar a `main`.
   El usuario suele responder "Sí, copialo a main".
 - En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v13`).
