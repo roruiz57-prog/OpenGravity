@@ -84,6 +84,27 @@
   // Color de los textos fijos (subtítulos, etiquetas, selección) según el fondo.
   const tinta = () => (fondoClaro() ? TINTA_OSCURA : '#f2f6ff');
 
+  // Con fondo claro, un color que va directo sobre el fondo (texto, grupo, flecha, forma sin relleno)
+  // se oscurece al dibujarlo hasta que se distinga (contraste 3:1). El color guardado no cambia:
+  // al volver a un fondo oscuro se ve el original.
+  function contraste(a, b) {
+    const la = luminancia(a), lb = luminancia(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+  }
+  function oscurecer(hex, f) {
+    const v = parseInt(hex.slice(1), 16);
+    const c = (x) => Math.round(x * f).toString(16).padStart(2, '0');
+    return '#' + c(v >> 16 & 255) + c(v >> 8 & 255) + c(v & 255);
+  }
+  function visible(color) {
+    if (!fondoClaro() || !/^#[0-9a-f]{6}$/i.test(color || '')) return color;
+    const fondos = doc.bg.type === 'solid' ? [doc.bg.c1] : [doc.bg.c1, doc.bg.c2];
+    const peor = (c) => Math.min(...fondos.map((b) => contraste(c, b)));
+    let r = color;
+    for (let f = 0.95; peor(r) < 3 && f > 0.1; f -= 0.05) r = oscurecer(color, f);
+    return r;
+  }
+
   // Cambia el fondo; si pasa de oscuro a claro (o al revés), los elementos blancos
   // pasan a azul oscuro (o al revés) para que se sigan viendo.
   function cambiarFondo(mutar) {
@@ -424,8 +445,9 @@
     let y = centroY - total / 2;
     const cx = n.x + n.w / 2;
     const fil = n.glow ? ' filter="url(#brillo)"' : '';
+    const colorTit = n.type === 'box' && n.fill !== 'none' ? n.color : visible(n.color);
     for (const t of tit) {
-      out.push(`<text x="${cx}" y="${y + altT * 0.82}" text-anchor="middle" font-family="${FUENTE_TITULO}" font-weight="900" font-size="${n.titleSize}" fill="${esc(n.color)}"${fil}>${esc(t)}</text>`);
+      out.push(`<text x="${cx}" y="${y + altT * 0.82}" text-anchor="middle" font-family="${FUENTE_TITULO}" font-weight="900" font-size="${n.titleSize}" fill="${esc(colorTit)}"${fil}>${esc(t)}</text>`);
       y += altT;
     }
     y += sep;
@@ -442,9 +464,10 @@
     const datos = paraExportar ? '' : ` data-node="${n.id}"`;
     if (n.type === 'group') {
       const fil = n.glow ? ' filter="url(#brillo-suave)"' : '';
+      const cg = esc(visible(n.color));
       return `<g>
-        <rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="4" fill="none" stroke="${esc(n.color)}" stroke-width="3"${trazoBorde(n.border)}${fil}/>
-        ${n.title ? `<text x="${n.x - 4}" y="${n.y - 12}" font-family="${FUENTE_TITULO}" font-weight="900" font-size="${n.titleSize}" fill="${esc(n.color)}"${n.glow ? ' filter="url(#brillo)"' : ''}${datos}>${esc(n.title)}</text>` : ''}
+        <rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="4" fill="none" stroke="${cg}" stroke-width="3"${trazoBorde(n.border)}${fil}/>
+        ${n.title ? `<text x="${n.x - 4}" y="${n.y - 12}" font-family="${FUENTE_TITULO}" font-weight="900" font-size="${n.titleSize}" fill="${cg}"${n.glow ? ' filter="url(#brillo)"' : ''}${datos}>${esc(n.title)}</text>` : ''}
         ${paraExportar ? '' : `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="none" stroke="transparent" stroke-width="22" pointer-events="stroke"${datos}/>`}
       </g>`;
     }
@@ -452,7 +475,8 @@
     if (n.type === 'box') {
       const fil = n.glow ? ' filter="url(#brillo-suave)"' : '';
       const relleno = n.fill === 'none' ? 'none' : esc(n.fill);
-      forma = figura(n.shape, n.x, n.y, n.w, n.h, `fill="${relleno}" stroke="${esc(n.color)}" stroke-width="3" stroke-linejoin="round"${trazoBorde(n.border)}${fil}`);
+      const borde = n.fill === 'none' ? visible(n.color) : n.color;
+      forma = figura(n.shape, n.x, n.y, n.w, n.h, `fill="${relleno}" stroke="${esc(borde)}" stroke-width="3" stroke-linejoin="round"${trazoBorde(n.border)}${fil}`);
     }
     const zona = paraExportar ? '' : `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="transparent"${datos}/>`;
     return `<g>${forma}<g pointer-events="none">${lineasTexto(n)}</g>${zona}</g>`;
@@ -466,11 +490,12 @@
     const flechaFin = e.arrow === 'end' || e.arrow === 'both';
     const flechaIni = e.arrow === 'start' || e.arrow === 'both';
     const largo = 14, ancho = 7;
+    const colorFlecha = esc(visible(e.color));
     const puntas = [];
     const punta = (tip, dir) => {
       const bx = tip.x - dir.x * largo, by = tip.y - dir.y * largo;
       const px = -dir.y, py = dir.x;
-      return `<polygon points="${tip.x},${tip.y} ${bx + px * ancho},${by + py * ancho} ${bx - px * ancho},${by - py * ancho}" fill="${esc(e.color)}"/>`;
+      return `<polygon points="${tip.x},${tip.y} ${bx + px * ancho},${by + py * ancho} ${bx - px * ancho},${by - py * ancho}" fill="${colorFlecha}"/>`;
     };
     if (flechaFin) { puntas.push(punta(fin, d)); fin = { x: fin.x - d.x * largo * 0.8, y: fin.y - d.y * largo * 0.8 }; }
     if (flechaIni) { const r = { x: -d.x, y: -d.y }; puntas.push(punta(ini, r)); ini = { x: ini.x + d.x * largo * 0.8, y: ini.y + d.y * largo * 0.8 }; }
@@ -491,7 +516,7 @@
     }
     return `<g>
       ${seleccionada ? `<path d="${trazo}" stroke="#7fe3ff" stroke-width="12" opacity=".35" stroke-linecap="round" fill="none"/>` : ''}
-      <path d="${trazo}" stroke="${esc(e.color)}" stroke-width="3" stroke-linecap="round" fill="none"${guion}/>
+      <path d="${trazo}" stroke="${colorFlecha}" stroke-width="3" stroke-linecap="round" fill="none"${guion}/>
       ${puntas.join('')}
       ${etiqueta}
       ${paraExportar ? '' : `<path d="M${g.ini.x},${g.ini.y} L${g.fin.x},${g.fin.y}" stroke="transparent" stroke-width="20" fill="none" data-edge="${e.id}"/>`}
@@ -1047,6 +1072,9 @@
         ? '<p class="pista-varias">Toca otras formas para sumarlas o quitarlas.</p>'
         : '<p class="pista-varias">Shift + clic suma o quita formas. Arrastra una para mover todas.</p>';
       const sinDos = cant < 2 ? 'disabled' : '', sinTres = cant < 3 ? 'disabled' : '';
+      // Color en común (si todas tienen el mismo, se marca; si no, ninguna muestra queda marcada).
+      const comun = (lista, campo) => (lista.length && lista.every((n) => n[campo] === lista[0][campo]) ? lista[0][campo] : '');
+      const formas = elegidas().filter((n) => n.type === 'box');
       h += `<h2>${cant} ${cant === 1 ? 'forma elegida' : 'formas elegidas'}<button class="cerrar" id="p-cerrar" title="Cerrar">×</button></h2>
         ${pista}
         <div class="campo"><span>Alinear</span><div class="botones alinear">
@@ -1061,6 +1089,8 @@
           <button class="btn-sec" id="p-repartir-h" ${sinTres}>Horizontal</button>
           <button class="btn-sec" id="p-repartir-v" ${sinTres}>Vertical</button>
         </div></div>
+        <div class="campo"><span>Color del borde y título</span>${muestras('p-color', COLORES, comun(elegidas(), 'color'), true)}</div>
+        ${formas.length ? `<div class="campo"><span>Relleno${formas.length < cant ? ' (solo las formas)' : ''}</span>${muestras('p-relleno', RELLENOS, comun(formas, 'fill'), true)}</div>` : ''}
         <div class="botones">
           ${eligiendoVarias ? '<button class="btn-pri" id="p-listo">Listo</button>' : ''}
           <button class="btn-peligro" id="p-eliminar">Eliminar ${cant === 1 ? 'la forma' : `las ${cant}`}</button>
@@ -1148,7 +1178,9 @@
     const campoColor = { 'p-color': 'color', 'p-relleno': 'fill', 'p-c1': 'c1', 'p-c2': 'c2' };
     const aplicarColor = (grupo, c) => {
       if (grupo === 'p-c1' || grupo === 'p-c2') cambiarFondo((bg) => { bg[campoColor[grupo]] = c; });
-      else objetivo()[campoColor[grupo]] = c;
+      else if (sel.kind === 'multi') {
+        for (const n of elegidas()) if (grupo !== 'p-relleno' || n.type === 'box') n[campoColor[grupo]] = c;
+      } else objetivo()[campoColor[grupo]] = c;
       panel.querySelectorAll(`.muestra[data-grupo="${grupo}"]`).forEach((b) => b.classList.toggle('activa', b.dataset.color === c));
       dibujar();
     };

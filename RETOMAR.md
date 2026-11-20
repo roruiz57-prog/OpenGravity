@@ -2,7 +2,7 @@
 
 > Leer este archivo al empezar un chat nuevo. Junto con `CLAUDE.md` (decisiones, estructura del
 > código y formato de los diagramas) alcanza para seguir sin la conversación anterior.
-> Última actualización: 20 de noviembre de 2026 (trabajo en nube y PC; APK: elegir dónde guardar y exportar).
+> Última actualización: 20 de noviembre de 2026 (color de varias y contraste en fondos claros).
 
 ## 1. Dónde está todo
 
@@ -23,6 +23,12 @@
   y aparece una línea rosa. Alt en la PC lo desactiva.
 - **Elegir varias** (19/11/2026): Shift + clic en la PC, o el botón "Elegir varias" en el celular. Permite alinear
   (izquierda, centro, derecha, arriba, medio, abajo), repartir parejo (3 o más), mover juntas y borrar.
+- **Color de varias a la vez** (20/11/2026, en la rama de trabajo; **falta publicar en `main`**): con varias elegidas,
+  el panel tiene "Color del borde y título" y "Relleno" (el relleno va solo a las formas; textos y grupos no tienen).
+  Si todas tienen el mismo color, aparece marcado. Se deshace en un paso.
+- **Contraste en fondos claros** (20/11/2026, idem): con fondo claro, los colores que van directo sobre el fondo
+  (textos, grupos, flechas, formas sin relleno) se **oscurecen al dibujarlos** hasta contraste 3:1 (`visible()` en
+  `app.js`). El color guardado no cambia: en fondo oscuro se ve el original. Los títulos sobre relleno no se tocan.
 - Fondos: galería de 8, color liso o degradado, textura y estrellas.
 - Exportar a PNG, JPG, WebP, SVG y PDF, con opción de fondo transparente.
 - **Mis diagramas**: varios diagramas guardados en el dispositivo.
@@ -133,6 +139,7 @@
 - `prueba_ia.py`: sin clave, lista de modelos, crear, modificar y deshacer, respuesta rota, respaldo y error.
 - `prueba_ia_reintento.py`: saturación, demora, límite por minuto, cuota del día y modelo sugerido.
 - `prueba_alinear.py`: guías magnéticas y selección múltiple.
+- `prueba_color_contraste.py`: color de varias (escritorio y celular) y contraste en fondo claro.
 - `comun.py`: funciones compartidas. Las capturas van a `pruebas/capturas/` (ignorada por git).
 
 ### 3.5 Proteger las claves de IA
@@ -176,7 +183,6 @@
   Windows (el CMD de `Armar APK` y su cuadro de contraseña).
 
 ## 4. Ideas que el usuario vio y todavía no eligió
-- Cambiar el color de varias formas elegidas a la vez (la selección múltiple ya existe).
 - **Flechas curvas o en ángulo recto**, como en los organigramas.
 - **Respaldo o sincronización con Google Drive**: hoy cada dispositivo tiene su propia lista y se pasan diagramas con Guardar/Abrir archivo `.json`.
 - Más plantillas.
@@ -185,7 +191,6 @@
 ## 5. Detalles conocidos (no son errores urgentes)
 - Los diagramas viven **en cada dispositivo**: el celular y la PC no se sincronizan.
 - Borrar un grupo borra solo el marco; lo de adentro queda. Es a propósito.
-- En fondos claros, los textos celestes (por ejemplo CONTEXTO o ACCIÓN de la plantilla) tienen poco contraste.
 - En el celular vertical, un diagrama ancho se ve chico; se agranda con dos dedos.
 - La protección de Vercel ("Vercel Authentication") quedó en el valor por defecto. El usuario abre la app
   sin problema; si algún día le pide iniciar sesión, es por esa protección.
@@ -198,7 +203,7 @@
   en su PC, en la misma rama. Las sesiones en la nube suben también a la rama de trabajo sin preguntar.
 - **Pedir autorización cada vez** antes de copiar a `main`.
   El usuario suele responder "Sí, copialo a main".
-- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v16`).
+- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v17`).
   Si no, el celular sigue mostrando la versión vieja.
 - Después de publicar, recordarle: "cierra la app y ábrela dos veces".
 - Probar en escritorio (1400×860) y celular (360×740) antes de proponer publicar.
