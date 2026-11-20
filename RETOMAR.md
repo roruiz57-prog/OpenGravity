@@ -145,6 +145,9 @@
 - **20/11/2026:** el usuario cerró y reabrió la app de Claude en la PC; **sigue sin ofrecerla**. Probablemente la
   función no está habilitada todavía para la cuenta. Volver a probar más adelante, sin insistir.
 - Mientras tanto ya no hace tanta falta: desde el 20/11/2026 `Armar APK` trae solo lo último de GitHub.
+- **Decisión del usuario (20/11/2026): trabajar todo desde VS Code en la PC** (Claude Code local). Alternar entre la
+  app de escritorio, la nube y la terminal le resulta engorroso. No volver a proponer Remote Control ni sesiones en la
+  nube salvo que lo pida.
 
 ## 4. Ideas que el usuario vio y todavía no eligió
 - Cambiar el color de varias formas elegidas a la vez (la selección múltiple ya existe).
