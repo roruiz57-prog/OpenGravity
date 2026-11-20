@@ -147,7 +147,7 @@
 - **HECHO (19/11/2026):** la misma regla, resumida, está en sus **preferencias personales de claude.ai**
   (reemplazó la versión corta que tenía), para la web y el celular.
 
-### 3.6 Acceso remoto desde la nube a la notebook (20/11/2026)
+### 3.6 Que la nube entre a la notebook — NO DISPONIBLE (20/11/2026)
 - Idea: que una sesión en la nube traiga lo último de GitHub en la PC, así el usuario solo hace doble clic en
   Armar APK y escribe la contraseña. **La firma igual se hace en la PC**: la llave y la contraseña no salen de ahí.
 - Estado: la notebook **NOTEBOOK-LOCAL** tiene la carpeta **VibeCoding** en su lista de Remote Control, pero
@@ -158,7 +158,9 @@
 - Mientras tanto ya no hace tanta falta: desde el 20/11/2026 `Armar APK` trae solo lo último de GitHub.
 - **Decisión del usuario (20/11/2026): trabajar en los dos lados, la nube y VS Code en la PC**, con GitHub como
   puente (no hace falta que la nube entre a la PC). Detalle en `CLAUDE.md` → "Ramas y forma de trabajar en dos lados".
-  No volver a proponer Remote Control salvo que el usuario lo pida.
+  **No volver a proponer que la nube entre a la PC** (carpetas de Remote Control para sesiones en la nube) salvo que el
+  usuario lo pida. Ojo, es otra cosa que el **`/remote-control` de Claude Code**, que el usuario **sí usa** para manejar
+  desde el celular la sesión de VS Code en su PC (ver 3.7).
 
 ### 3.7 Escritorio remoto de Google para usar la PC desde el celular — HECHO (20/11/2026)
 - Para correr `Armar APK` sin estar frente a la PC (la contraseña se escribe igual en la PC, vía la sesión remota).
