@@ -160,6 +160,19 @@
   puente (no hace falta que la nube entre a la PC). Detalle en `CLAUDE.md` → "Ramas y forma de trabajar en dos lados".
   No volver a proponer Remote Control salvo que el usuario lo pida.
 
+### 3.7 Escritorio remoto de Google para usar la PC desde el celular — HECHO (20/11/2026)
+- Para correr `Armar APK` sin estar frente a la PC (la contraseña se escribe igual en la PC, vía la sesión remota).
+- El usuario instaló **Chrome Remote Desktop** en la PC (remotedesktop.google.com/access → Configurar acceso
+  remoto), con acceso sin que nadie acepte del otro lado. El **PIN** está en su gestor de contraseñas (nunca en el chat).
+  La cuenta de Google tiene verificación en dos pasos. Probado desde el celular: pide el PIN y conecta.
+- En el celular (Samsung A22) usa la app Chrome Remote Desktop en modo **Entrada en pantalla** (táctil). Gestos:
+  toque = clic, dos dedos = clic derecho, pellizcar = zoom, tres dedos abajo = barra de la app (opción de ajustar
+  el tamaño del escritorio al celular, para que la barra de tareas no se vea diminuta).
+- También puede entrar desde la notebook de su casa: remotedesktop.google.com/access en Chrome o Edge, misma cuenta
+  y PIN, sin instalar nada.
+- Para VS Code / Claude Code desde el celular usa `/remote-control`; el escritorio remoto es para lo que corre en
+  Windows (el CMD de `Armar APK` y su cuadro de contraseña).
+
 ## 4. Ideas que el usuario vio y todavía no eligió
 - Cambiar el color de varias formas elegidas a la vez (la selección múltiple ya existe).
 - **Flechas curvas o en ángulo recto**, como en los organigramas.
