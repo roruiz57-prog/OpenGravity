@@ -2,7 +2,7 @@
 
 > Leer este archivo al empezar un chat nuevo. Junto con `CLAUDE.md` (decisiones, estructura del
 > código y formato de los diagramas) alcanza para seguir sin la conversación anterior.
-> Última actualización: 20 de noviembre de 2026 (Armar APK trae lo último; trabajo en nube y PC).
+> Última actualización: 20 de noviembre de 2026 (trabajo en nube y PC; APK: elegir dónde guardar y exportar).
 
 ## 1. Dónde está todo
 
@@ -81,6 +81,11 @@
      internet, pregunta si arma igual; si el propio script cambió, corre la versión nueva. Muestra en la ventana el
      **último cambio con fecha** con el que va a armar. Trae la rama en la que está la PC (no cambia de rama).
      **No se pudo probar en la nube** (no hay PowerShell): la primera prueba real es en la PC.
+   - **20/11/2026, pedido del usuario: elegir dónde guardar.** Guardar archivo y Exportar (PNG, JPG, WebP, SVG, PDF)
+     ya no van fijos a Documentos/OpenGravity: abren el cuadro **"Guardar como" de Android** (carpeta y nombre),
+     con un componente propio de la app (`GuardarComoPlugin.java`, sin dependencias nuevas). Si el usuario cancela,
+     avisa "No se guardó"; si el cuadro falla, abre la lista de compartir. El código de Android compila y las
+     pruebas pasan; **falta armar el APK y probarlo en el celular** (Guardar tiene que abrir el cuadro de carpetas).
 4. Los datos del APK van aparte de los de la app del navegador: pasar diagramas con Guardar/Abrir archivo
    y pegar de nuevo las claves de IA.
 
@@ -110,9 +115,8 @@
   - si OpenRouter acepta `response_format` con el modelo gratuito elegido (con el modelo que usó el usuario, funcionó).
 
 ### 3.4 Pruebas automáticas — HECHO (19/11/2026)
-- **19/11/2026, en la sesión en la nube:** `prueba_alinear.py` falló en distintos pasos de una corrida a otra,
-  también sin cambios en la app (clics que caen mientras se redibuja). Las otras 4 pasan. Revisar en la PC si
-  allá pasa; si falla, agregar esperas en la prueba.
+- **19/11/2026, en la sesión en la nube:** `prueba_alinear.py` falló en distintos pasos de una corrida a otra.
+  **20/11/2026: en la PC pasa** (dos corridas seguidas, las 5 pruebas en verde). Era cosa del entorno de la nube.
 - Todas en `pruebas/` (Python + Playwright, sin otras dependencias). Un solo comando, que levanta el servidor solo:
   `python pruebas/correr_todas.py`. **Correrlo antes de proponer publicar.**
 - `prueba_editor.py`: crear, conectar, mover, deshacer y exportar PNG (escritorio y celular); las 8 formas, bordes y
@@ -172,7 +176,7 @@
   en su PC, en la misma rama. Las sesiones en la nube suben también a la rama de trabajo sin preguntar.
 - **Pedir autorización cada vez** antes de copiar a `main`.
   El usuario suele responder "Sí, copialo a main".
-- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v14`).
+- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v15`).
   Si no, el celular sigue mostrando la versión vieja.
 - Después de publicar, recordarle: "cierra la app y ábrela dos veces".
 - Probar en escritorio (1400×860) y celular (360×740) antes de proponer publicar.

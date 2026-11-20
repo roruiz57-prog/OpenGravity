@@ -1175,10 +1175,9 @@
         contenido(true) + '</svg>'
     };
   }
-  // En el APK (Capacitor) Android ignora las descargas del navegador: ahí se guarda con el sistema
-  // de archivos de Android, en Documentos/OpenGravity. En el navegador, descarga normal.
+  // En el APK (Capacitor) Android ignora las descargas del navegador: ahí se abre el cuadro
+  // "Guardar como" de Android (GuardarComoPlugin.java) para elegir carpeta y nombre. En el navegador, descarga normal.
   const enAPK = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
-  const CARPETA_APK = 'OpenGravity';
   function pluginAPK(nombre) {
     const C = window.Capacitor;
     return (C.Plugins && C.Plugins[nombre]) || (C.registerPlugin && C.registerPlugin(nombre));
@@ -1191,24 +1190,26 @@
       r.readAsDataURL(blob);
     });
   }
-  // Guarda el archivo y devuelve dónde quedó (texto para el aviso).
+  // Guarda el archivo y devuelve dónde quedó (texto para el aviso), CANCELADO o null (lista de compartir).
+  const CANCELADO = 'cancelado';
   async function descargar(blob, nombre) {
     if (enAPK) {
-      const data = await blobABase64(blob);
+      const datos = await blobABase64(blob);
       try {
-        await pluginAPK('Filesystem').writeFile({ path: `${CARPETA_APK}/${nombre}`, data, directory: 'DOCUMENTS', recursive: true });
-        return `en Documentos/${CARPETA_APK}`;
+        const r = await pluginAPK('GuardarComo').guardar({ nombre, tipo: blob.type || 'application/octet-stream', datos });
+        return r && r.cancelado ? CANCELADO : 'donde elegiste';
       } catch (_) {
-        // Si Android no deja escribir en Documentos, se ofrece compartirlo (Drive, WhatsApp, correo…).
-        await compartirArchivoAPK(data, nombre);
-        return null; // se abrió la lista de compartir
+        // Si el cuadro de Android falla, se ofrece compartirlo (Drive, WhatsApp, correo…).
+        await compartirArchivoAPK(datos, nombre);
+        return null;
       }
     }
     descargarEnNavegador(blob, nombre);
     return 'en Descargas';
   }
-  // Aviso después de guardar: dónde quedó, o que elija en la lista de compartir.
+  // Aviso después de guardar: dónde quedó, que no se guardó, o que elija en la lista de compartir.
   function avisarGuardado(texto, donde) {
+    if (donde === CANCELADO) return avisar('No se guardó');
     avisar(donde ? `${texto} ${donde}` : 'Elige dónde guardarlo o enviarlo');
   }
   async function compartirArchivoAPK(base64, nombre) {
