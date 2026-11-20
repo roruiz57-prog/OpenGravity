@@ -85,13 +85,14 @@
      ya no van fijos a Documentos/OpenGravity: abren el cuadro **"Guardar como" de Android** (carpeta y nombre),
      con un componente propio de la app (`GuardarComoPlugin.java`, sin dependencias nuevas). Si el usuario cancela,
      avisa "No se guardó"; si el cuadro falla, abre la lista de compartir. El código de Android compila y las
-     pruebas pasan; **falta armar el APK y probarlo en el celular** (Guardar tiene que abrir el cuadro de carpetas).
+     pruebas pasan. **HECHO (20/11/2026): el usuario armó el APK nuevo y lo probó en el celular: funciona.**
    - **20/11/2026, también en la PC:** en Chrome y Edge, Guardar y Exportar abren el cuadro "Guardar como" de
      Windows (función del navegador, sin dependencias). En otros navegadores sigue bajando a Descargas.
      Prueba: `pruebas/prueba_guardar_como.py` (PC y APK simulados).
    - **20/11/2026, contraseña del armado:** `Armar APK` la pide en un cuadrito de Windows (tapada con puntos) que
      **admite pegar** con Ctrl+V o clic derecho; el viejo `Read-Host -AsSecureString` no dejaba pegar. Si se pegó,
-     la borra del portapapeles. Probado el cuadro solo; la primera prueba real es el próximo armado.
+     la borra del portapapeles. Usado en el armado del 20/11/2026: funcionó.
+   - Publicado en `main` el 20/11/2026 (`diagramas-v16`). El usuario probó el "Guardar como" en la PC: funciona.
 4. Los datos del APK van aparte de los de la app del navegador: pasar diagramas con Guardar/Abrir archivo
    y pegar de nuevo las claves de IA.
 
