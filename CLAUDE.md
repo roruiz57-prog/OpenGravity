@@ -23,6 +23,15 @@ usarse en **Android y Windows** desde una sola base de código.
   misma rama. **Antes de empezar, traer lo último de GitHub** (`git fetch` / `git pull`) para no pisar
   el trabajo del otro lado.
 
+## Ramas y forma de trabajar en dos lados (decidido 20/11/2026)
+- **Rama de trabajo única:** `claude/diagram-app-android-windows-7uc7d9`. La usan la nube y VS Code en la PC.
+- **Sesiones en la nube:** arrancan en una rama propia con nombre al azar. **Autorización fija del usuario:** al
+  terminar cada cambio, subirlo también a la rama de trabajo única, **sin preguntar**, siempre que esa rama no
+  tenga cambios nuevos que la sesión no trajo (si los tiene, traerlos primero y unir).
+- **`main` (lo que publica Vercel) sigue pidiendo autorización cada vez.**
+- No trabajar en los dos lados al mismo tiempo: uno termina y sube, el otro trae y sigue.
+- Solo en la PC: armar y firmar el APK, Google Drive (`G:`) y archivos de `D:`. El resto se puede hacer en cualquier lado.
+
 ## Decisiones tomadas (no volver a discutir salvo que el usuario lo pida)
 1. **PWA** (app web instalable). Sin frameworks ni paso de compilación:
    HTML + CSS + JavaScript puro. Se instala desde Chrome (Android) o Edge/Chrome (Windows).

@@ -2,14 +2,14 @@
 
 > Leer este archivo al empezar un chat nuevo. Junto con `CLAUDE.md` (decisiones, estructura del
 > código y formato de los diagramas) alcanza para seguir sin la conversación anterior.
-> Última actualización: 20 de noviembre de 2026 (Armar APK trae lo último de GitHub).
+> Última actualización: 20 de noviembre de 2026 (Armar APK trae lo último; trabajo en nube y PC).
 
 ## 1. Dónde está todo
 
 | Qué | Dónde |
 |---|---|
 | Código | GitHub `roruiz57-prog/OpenGravity` (repositorio privado) |
-| Rama de trabajo de Claude | `claude/diagram-app-android-windows-7uc7d9` |
+| Rama de trabajo de Claude | `claude/diagram-app-android-windows-7uc7d9` (la nube y la PC; las sesiones en la nube suben ahí sin preguntar) |
 | Rama publicada | `main`: Vercel publica solo lo que llega acá |
 | App publicada | https://opengravity-seven.vercel.app |
 | Proyecto en Vercel | `opengravity` en la cuenta personal "roruiz57-5623's projects" (plan Hobby, gratis) |
@@ -145,9 +145,9 @@
 - **20/11/2026:** el usuario cerró y reabrió la app de Claude en la PC; **sigue sin ofrecerla**. Probablemente la
   función no está habilitada todavía para la cuenta. Volver a probar más adelante, sin insistir.
 - Mientras tanto ya no hace tanta falta: desde el 20/11/2026 `Armar APK` trae solo lo último de GitHub.
-- **Decisión del usuario (20/11/2026): trabajar todo desde VS Code en la PC** (Claude Code local). Alternar entre la
-  app de escritorio, la nube y la terminal le resulta engorroso. No volver a proponer Remote Control ni sesiones en la
-  nube salvo que lo pida.
+- **Decisión del usuario (20/11/2026): trabajar en los dos lados, la nube y VS Code en la PC**, con GitHub como
+  puente (no hace falta que la nube entre a la PC). Detalle en `CLAUDE.md` → "Ramas y forma de trabajar en dos lados".
+  No volver a proponer Remote Control salvo que el usuario lo pida.
 
 ## 4. Ideas que el usuario vio y todavía no eligió
 - Cambiar el color de varias formas elegidas a la vez (la selección múltiple ya existe).
@@ -168,9 +168,9 @@
 - No es programador (practica *vibecoding*). Responder en español latinoamericano, directo y sin jerga.
 - **Antes de ejecutar algo, confirmar en una frase lo que se entendió.**
 - **Seguridad de credenciales es prioridad:** ver la regla en `CLAUDE.md`. Nada de secretos en GitHub ni en el chat.
-- **Antes de trabajar, traer lo último de GitHub:** el usuario también trabaja con Claude Code en su PC y
-  sube a la misma rama.
-- Trabajar en la rama de trabajo y **pedir autorización cada vez** antes de copiar a `main`.
+- **Antes de trabajar, traer lo último de GitHub; al terminar, subir.** El usuario trabaja en la nube y en VS Code
+  en su PC, en la misma rama. Las sesiones en la nube suben también a la rama de trabajo sin preguntar.
+- **Pedir autorización cada vez** antes de copiar a `main`.
   El usuario suele responder "Sí, copialo a main".
 - En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v14`).
   Si no, el celular sigue mostrando la versión vieja.
