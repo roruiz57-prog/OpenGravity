@@ -142,8 +142,9 @@
 - Estado: la notebook **NOTEBOOK-LOCAL** tiene la carpeta **VibeCoding** en su lista de Remote Control, pero
   **no la ofrece a sesiones en la nube** (sin motivo informado). Causa probable: la app de Claude de escritorio
   desactualizada en Windows, o la función todavía no habilitada para la cuenta.
-- Próximo paso: cerrar del todo la app de Claude (clic derecho en su ícono junto al reloj → Salir), abrirla de
-  nuevo (se actualiza al abrir) y volver a probar. Si sigue igual, usar VS Code en la PC.
+- **20/11/2026:** el usuario cerró y reabrió la app de Claude en la PC; **sigue sin ofrecerla**. Probablemente la
+  función no está habilitada todavía para la cuenta. Volver a probar más adelante, sin insistir.
+- Mientras tanto ya no hace tanta falta: desde el 20/11/2026 `Armar APK` trae solo lo último de GitHub.
 
 ## 4. Ideas que el usuario vio y todavía no eligió
 - Cambiar el color de varias formas elegidas a la vez (la selección múltiple ya existe).
