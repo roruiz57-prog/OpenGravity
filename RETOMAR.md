@@ -2,7 +2,7 @@
 
 > Leer este archivo al empezar un chat nuevo. Junto con `CLAUDE.md` (decisiones, estructura del
 > código y formato de los diagramas) alcanza para seguir sin la conversación anterior.
-> Última actualización: 20 de noviembre de 2026 (APK sin el arreglo de guardado; acceso remoto).
+> Última actualización: 20 de noviembre de 2026 (Armar APK trae lo último de GitHub).
 
 ## 1. Dónde está todo
 
@@ -76,6 +76,11 @@
      instalar desde Drive → Guardar archivo tiene que decir "**en Documentos/OpenGravity**".
    - **Cómo ver la versión instalada:** en el celular, Ajustes → Aplicaciones → OpenGravity Diagramas (abajo).
      Formato `1.0.AAMMDD.HHmm` (fecha y hora del armado en la PC).
+   - **20/11/2026: `Armar APK` ahora trae solo lo último de GitHub** (`scripts/armar-apk.ps1`). Antes de pedir la
+     contraseña: si hay archivos cambiados o cambios guardados en la PC sin subir, **no arma** y avisa; si no hay
+     internet, pregunta si arma igual; si el propio script cambió, corre la versión nueva. Muestra en la ventana el
+     **último cambio con fecha** con el que va a armar. Trae la rama en la que está la PC (no cambia de rama).
+     **No se pudo probar en la nube** (no hay PowerShell): la primera prueba real es en la PC.
 4. Los datos del APK van aparte de los de la app del navegador: pasar diagramas con Guardar/Abrir archivo
    y pegar de nuevo las claves de IA.
 
@@ -141,8 +146,6 @@
   nuevo (se actualiza al abrir) y volver a probar. Si sigue igual, usar VS Code en la PC.
 
 ## 4. Ideas que el usuario vio y todavía no eligió
-- **Que `Armar APK` traiga lo último de GitHub antes de armar** y muestre en la ventana qué versión arma
-  (evita repetir lo del 20/11). Si hay cambios en la PC sin subir, que no arme y avise.
 - Cambiar el color de varias formas elegidas a la vez (la selección múltiple ya existe).
 - **Flechas curvas o en ángulo recto**, como en los organigramas.
 - **Respaldo o sincronización con Google Drive**: hoy cada dispositivo tiene su propia lista y se pasan diagramas con Guardar/Abrir archivo `.json`.

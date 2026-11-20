@@ -12,6 +12,63 @@ if (-not (Test-Path $llave)) {
     Write-Host "No esta la llave en $llave. Crearla con scripts\crear-llave-firma.ps1." -ForegroundColor Red
     exit 1
 }
+
+# --- Traer lo ultimo de GitHub antes de armar (agregado el 20/11/2026: ese dia se armo un APK viejo) ---
+function Parar($mensaje) {
+    Write-Host ''
+    Write-Host $mensaje -ForegroundColor Red
+    Write-Host 'No se armo nada.' -ForegroundColor Red
+    exit 1
+}
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) { Parar 'No encuentro Git en esta PC.' }
+Set-Location $repo
+$rama = (git rev-parse --abbrev-ref HEAD).Trim()
+Write-Host "Revisando GitHub (rama $rama)..." -ForegroundColor Cyan
+
+# 1) Cambios en la PC que no estan guardados en git: no se arma, para no mezclar ni perder nada.
+$pendientes = git status --porcelain --untracked-files=no
+if ($pendientes) {
+    Write-Host 'Hay archivos cambiados en la PC que no se subieron a GitHub:' -ForegroundColor Yellow
+    $pendientes | ForEach-Object { Write-Host "   $_" }
+    Parar 'Pedile a Claude Code que los suba (o los descarte) y volve a armar.'
+}
+
+# 2) Traer lo ultimo.
+git fetch --quiet origin
+if ($LASTEXITCODE -ne 0) {
+    Write-Host 'No pude conectarme con GitHub (sin internet o sin permiso).' -ForegroundColor Yellow
+    $resp = Read-Host 'Armar igual con lo que ya esta en la PC? (s/n)'
+    if ($resp -notmatch '^[sS]') { Parar 'Cancelado.' }
+} else {
+    $remota = "origin/$rama"
+    git rev-parse --verify --quiet "refs/remotes/$remota" | Out-Null
+    if ($LASTEXITCODE -ne 0) { Parar "La rama $rama no existe en GitHub. Pedile ayuda a Claude Code." }
+    $cuentas = (git rev-list --left-right --count "HEAD...$remota").Trim() -split '\s+'
+    $soloPC = [int]$cuentas[0]; $soloGitHub = [int]$cuentas[1]
+    if ($soloPC -gt 0) {
+        Parar "La PC tiene $soloPC cambio(s) guardado(s) que no estan en GitHub. Pedile a Claude Code que los suba y volve a armar."
+    }
+    if ($soloGitHub -gt 0) {
+        $antes = (Get-FileHash $PSCommandPath).Hash
+        git merge --ff-only --quiet $remota
+        if ($LASTEXITCODE -ne 0) { Parar 'No pude traer lo ultimo de GitHub. Pedile ayuda a Claude Code.' }
+        Write-Host "Traje $soloGitHub cambio(s) nuevo(s) de GitHub." -ForegroundColor Green
+        # Si este mismo script cambio, correr la version nueva en lugar de esta.
+        if (-not $env:OPENGRAVITY_RELANZADO -and (Get-FileHash $PSCommandPath).Hash -ne $antes) {
+            Write-Host 'El script de armado se actualizo; uso la version nueva.' -ForegroundColor Cyan
+            $env:OPENGRAVITY_RELANZADO = '1'
+            & powershell -ExecutionPolicy Bypass -File $PSCommandPath
+            exit $LASTEXITCODE
+        }
+    } else {
+        Write-Host 'La PC ya tenia lo ultimo de GitHub.' -ForegroundColor Green
+    }
+}
+Write-Host ''
+Write-Host 'Se va a armar con este ultimo cambio:' -ForegroundColor Cyan
+Write-Host ('   ' + (git log -1 '--date=format:%d/%m/%Y %H:%M' '--format=%s  (%cd)')) -ForegroundColor White
+Write-Host ''
+
 if (-not $env:ANDROID_HOME) { $env:ANDROID_HOME = Join-Path $env:LOCALAPPDATA 'Android\Sdk' }
 if (-not $env:JAVA_HOME) { $env:JAVA_HOME = 'C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot' }
 
