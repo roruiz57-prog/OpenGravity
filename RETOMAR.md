@@ -2,7 +2,7 @@
 
 > Leer este archivo al empezar un chat nuevo. Junto con `CLAUDE.md` (decisiones, estructura del
 > código y formato de los diagramas) alcanza para seguir sin la conversación anterior.
-> Última actualización: 19 de noviembre de 2026 (seguridad de claves).
+> Última actualización: 20 de noviembre de 2026 (APK sin el arreglo de guardado; acceso remoto).
 
 ## 1. Dónde está todo
 
@@ -68,6 +68,14 @@
    de Capacitor: guarda en **Documentos/OpenGravity** del celular y el botón Compartir funciona. Si Android no
    deja escribir ahí, abre la lista de compartir. Probado solo **simulando** el APK; **falta armar el APK nuevo en
    la PC** (el script ya reinstala los componentes si cambió la lista) **y probarlo en el celular**.
+   - **20/11/2026 14:01:** se armó un APK en la PC pero salió **SIN el arreglo** (la PC no había traído lo
+     último de GitHub). En el celular, Guardar archivo muestra el aviso viejo "Archivo guardado" y no guarda.
+     **Para volver a armarlo:** en la PC, pedirle a Claude Code "trae lo último de GitHub" → confirmar que el
+     último cambio es "APK: guardar y exportar con Android (Documentos/OpenGravity) y compartir" → doble clic en
+     `D:\VibeCoding\Diagramas multiplataforma\Armar APK.cmd` (esta vez tiene que **instalar componentes**) →
+     instalar desde Drive → Guardar archivo tiene que decir "**en Documentos/OpenGravity**".
+   - **Cómo ver la versión instalada:** en el celular, Ajustes → Aplicaciones → OpenGravity Diagramas (abajo).
+     Formato `1.0.AAMMDD.HHmm` (fecha y hora del armado en la PC).
 4. Los datos del APK van aparte de los de la app del navegador: pasar diagramas con Guardar/Abrir archivo
    y pegar de nuevo las claves de IA.
 
@@ -123,7 +131,18 @@
 - **HECHO (19/11/2026):** la misma regla, resumida, está en sus **preferencias personales de claude.ai**
   (reemplazó la versión corta que tenía), para la web y el celular.
 
+### 3.6 Acceso remoto desde la nube a la notebook (20/11/2026)
+- Idea: que una sesión en la nube traiga lo último de GitHub en la PC, así el usuario solo hace doble clic en
+  Armar APK y escribe la contraseña. **La firma igual se hace en la PC**: la llave y la contraseña no salen de ahí.
+- Estado: la notebook **NOTEBOOK-LOCAL** tiene la carpeta **VibeCoding** en su lista de Remote Control, pero
+  **no la ofrece a sesiones en la nube** (sin motivo informado). Causa probable: la app de Claude de escritorio
+  desactualizada en Windows, o la función todavía no habilitada para la cuenta.
+- Próximo paso: cerrar del todo la app de Claude (clic derecho en su ícono junto al reloj → Salir), abrirla de
+  nuevo (se actualiza al abrir) y volver a probar. Si sigue igual, usar VS Code en la PC.
+
 ## 4. Ideas que el usuario vio y todavía no eligió
+- **Que `Armar APK` traiga lo último de GitHub antes de armar** y muestre en la ventana qué versión arma
+  (evita repetir lo del 20/11). Si hay cambios en la PC sin subir, que no arme y avise.
 - Cambiar el color de varias formas elegidas a la vez (la selección múltiple ya existe).
 - **Flechas curvas o en ángulo recto**, como en los organigramas.
 - **Respaldo o sincronización con Google Drive**: hoy cada dispositivo tiene su propia lista y se pasan diagramas con Guardar/Abrir archivo `.json`.
