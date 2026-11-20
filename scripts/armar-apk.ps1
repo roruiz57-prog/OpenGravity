@@ -72,8 +72,44 @@ Write-Host ''
 if (-not $env:ANDROID_HOME) { $env:ANDROID_HOME = Join-Path $env:LOCALAPPDATA 'Android\Sdk' }
 if (-not $env:JAVA_HOME) { $env:JAVA_HOME = 'C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot' }
 
-$segura = Read-Host 'Contrasena de la llave de firma (no se ve al escribir)' -AsSecureString
-$clave = [Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($segura))
+# Cuadro de Windows para la contrasena: tapada con puntos, pero admite pegar (Ctrl+V o clic derecho),
+# que Read-Host -AsSecureString no permite. No se guarda en ningun archivo ni en el historial.
+function Pedir-Clave {
+    Add-Type -AssemblyName System.Windows.Forms
+    $form = New-Object Windows.Forms.Form
+    $form.Text = 'Armar APK de OpenGravity'
+    $form.ClientSize = New-Object Drawing.Size(360, 110)
+    $form.FormBorderStyle = 'FixedDialog'
+    $form.StartPosition = 'CenterScreen'
+    $form.MaximizeBox = $false; $form.MinimizeBox = $false; $form.TopMost = $true
+    $texto = New-Object Windows.Forms.Label
+    $texto.Text = 'Contrasena de la llave de firma (se puede pegar):'
+    $texto.SetBounds(12, 12, 336, 20)
+    $campo = New-Object Windows.Forms.TextBox
+    $campo.UseSystemPasswordChar = $true
+    $campo.SetBounds(12, 36, 336, 24)
+    $aceptar = New-Object Windows.Forms.Button
+    $aceptar.Text = 'Armar'; $aceptar.DialogResult = 'OK'; $aceptar.SetBounds(192, 72, 75, 26)
+    $cancelar = New-Object Windows.Forms.Button
+    $cancelar.Text = 'Cancelar'; $cancelar.DialogResult = 'Cancel'; $cancelar.SetBounds(273, 72, 75, 26)
+    $form.Controls.AddRange(@($texto, $campo, $aceptar, $cancelar))
+    $form.AcceptButton = $aceptar; $form.CancelButton = $cancelar
+    $form.Add_Shown({ $form.Activate(); $campo.Focus() })
+    $respuesta = $form.ShowDialog()
+    $valor = $campo.Text
+    $form.Dispose()
+    if ($respuesta -ne 'OK' -or -not $valor) { return $null }
+    # Si se pego, no dejar la contrasena en el portapapeles (solo se borra si es exactamente ella).
+    try {
+        if ([Windows.Forms.Clipboard]::ContainsText() -and [Windows.Forms.Clipboard]::GetText() -eq $valor) {
+            [Windows.Forms.Clipboard]::Clear()
+        }
+    } catch { }
+    return $valor
+}
+Write-Host 'Escribi o pega la contrasena en el cuadro que se abrio.' -ForegroundColor Cyan
+$clave = Pedir-Clave
+if (-not $clave) { Parar 'Cancelado: no se escribio la contrasena.' }
 
 $ahora = Get-Date
 $env:ANDROID_KEYSTORE_FILE = $llave

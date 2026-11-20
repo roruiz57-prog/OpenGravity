@@ -41,9 +41,15 @@ def diagrama(nodos, flechas=(), nombre='Prueba', bg=None):
             'nodes': list(nodos), 'edges': list(flechas)}
 
 
-def abrir(navegador, d=None, viewport=ESCRITORIO, **opciones):
-    """Abre la app limpia. Con `d`, ese diagrama queda guardado y abierto (id 'prueba')."""
+SIN_GUARDAR_COMO = 'window.showSaveFilePicker = undefined;'
+
+
+def abrir(navegador, d=None, viewport=ESCRITORIO, antes=SIN_GUARDAR_COMO, **opciones):
+    """Abre la app limpia. Con `d`, ese diagrama queda guardado y abierto (id 'prueba').
+    `antes` corre antes que la app; por defecto apaga el cuadro "Guardar como" para probar la descarga normal."""
     pagina = navegador.new_page(viewport=viewport, accept_downloads=True, **opciones)
+    if antes:
+        pagina.add_init_script(antes)
     errores = []
     pagina.on('pageerror', lambda e: errores.append(str(e)))
     pagina.on('console', lambda m: errores.append(m.text) if m.type == 'error' else None)

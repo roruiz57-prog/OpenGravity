@@ -70,7 +70,8 @@ usarse en **Android y Windows** desde una sola base de código.
   `.vercelignore` deja fuera de Vercel todo lo del APK.
   En el APK, guardar/exportar abre el cuadro "Guardar como" de Android con el componente propio
   `GuardarComoPlugin.java` (registrado en `MainActivity.java`); Compartir usa Filesystem + Share
-  (`descargar()` en `app.js`, que detecta el APK con `Capacitor.isNativePlatform()`); en el navegador, descarga normal.
+  (`descargar()` en `app.js`, que detecta el APK con `Capacitor.isNativePlatform()`); en Chrome/Edge usa
+  `showSaveFilePicker` ("Guardar como" de Windows) y en otros navegadores, descarga normal.
   Al cambiar archivos de la app, subir la versión de `CACHE` en `sw.js`.
 
 ## Formato del diagrama (`doc`)

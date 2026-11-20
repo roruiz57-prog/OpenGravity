@@ -86,6 +86,12 @@
      con un componente propio de la app (`GuardarComoPlugin.java`, sin dependencias nuevas). Si el usuario cancela,
      avisa "No se guardó"; si el cuadro falla, abre la lista de compartir. El código de Android compila y las
      pruebas pasan; **falta armar el APK y probarlo en el celular** (Guardar tiene que abrir el cuadro de carpetas).
+   - **20/11/2026, también en la PC:** en Chrome y Edge, Guardar y Exportar abren el cuadro "Guardar como" de
+     Windows (función del navegador, sin dependencias). En otros navegadores sigue bajando a Descargas.
+     Prueba: `pruebas/prueba_guardar_como.py` (PC y APK simulados).
+   - **20/11/2026, contraseña del armado:** `Armar APK` la pide en un cuadrito de Windows (tapada con puntos) que
+     **admite pegar** con Ctrl+V o clic derecho; el viejo `Read-Host -AsSecureString` no dejaba pegar. Si se pegó,
+     la borra del portapapeles. Probado el cuadro solo; la primera prueba real es el próximo armado.
 4. Los datos del APK van aparte de los de la app del navegador: pasar diagramas con Guardar/Abrir archivo
    y pegar de nuevo las claves de IA.
 
@@ -176,7 +182,7 @@
   en su PC, en la misma rama. Las sesiones en la nube suben también a la rama de trabajo sin preguntar.
 - **Pedir autorización cada vez** antes de copiar a `main`.
   El usuario suele responder "Sí, copialo a main".
-- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v15`).
+- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v16`).
   Si no, el celular sigue mostrando la versión vieja.
 - Después de publicar, recordarle: "cierra la app y ábrela dos veces".
 - Probar en escritorio (1400×860) y celular (360×740) antes de proponer publicar.

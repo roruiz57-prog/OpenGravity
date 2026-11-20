@@ -1176,7 +1176,7 @@
     };
   }
   // En el APK (Capacitor) Android ignora las descargas del navegador: ahí se abre el cuadro
-  // "Guardar como" de Android (GuardarComoPlugin.java) para elegir carpeta y nombre. En el navegador, descarga normal.
+  // "Guardar como" de Android (GuardarComoPlugin.java) para elegir carpeta y nombre.
   const enAPK = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   function pluginAPK(nombre) {
     const C = window.Capacitor;
@@ -1202,6 +1202,22 @@
         // Si el cuadro de Android falla, se ofrece compartirlo (Drive, WhatsApp, correo…).
         await compartirArchivoAPK(datos, nombre);
         return null;
+      }
+    }
+    // En Chrome y Edge (la PC): cuadro "Guardar como" de Windows. En otros navegadores, a Descargas.
+    if (window.showSaveFilePicker) {
+      const extension = nombre.slice(nombre.lastIndexOf('.'));
+      const opciones = { suggestedName: nombre };
+      if (blob.type) opciones.types = [{ description: extension.slice(1).toUpperCase(), accept: { [blob.type]: [extension] } }];
+      try {
+        const archivo = await window.showSaveFilePicker(opciones);
+        const escritor = await archivo.createWritable();
+        await escritor.write(blob);
+        await escritor.close();
+        return 'donde elegiste';
+      } catch (err) {
+        if (err && err.name === 'AbortError') return CANCELADO;
+        // Si el navegador no deja abrir el cuadro (por ejemplo, tardó mucho en preparar la imagen), descarga normal.
       }
     }
     descargarEnNavegador(blob, nombre);
