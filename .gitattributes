@@ -1,0 +1,4 @@
+# Capacitor reescribe estos archivos con saltos de linea LF en cada armado del APK.
+# Sin esto, en Windows git los ve como cambiados y "Armar APK" se niega a armar la vez siguiente.
+android/app/capacitor.build.gradle text eol=lf
+android/capacitor.settings.gradle text eol=lf
