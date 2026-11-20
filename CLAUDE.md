@@ -31,6 +31,14 @@ usarse en **Android y Windows** desde una sola base de código.
 - **`main` (lo que publica Vercel) sigue pidiendo autorización cada vez.**
 - No trabajar en los dos lados al mismo tiempo: uno termina y sube, el otro trae y sigue.
 - Solo en la PC: armar y firmar el APK, Google Drive (`G:`) y archivos de `D:`. El resto se puede hacer en cualquier lado.
+- **Cuándo conviene cada lado** (para orientar al usuario):
+  - **Nube:** la notebook está apagada o lejos (sirve desde el celular); cambios de código, pruebas automáticas,
+    publicar en `main`, actualizar RETOMAR; tareas largas que avanzan solas. No llega a `D:`, `G:` ni al APK.
+  - **VS Code en la PC** (directo o desde el celular con `/remote-control`): armar el APK (el de prueba, solo; el
+    definitivo pide la contraseña al usuario, en la PC o por Escritorio remoto de Chrome); archivos de `D:` o Drive;
+    ver la app en su navegador o probar cosas de Windows. Necesita la notebook prendida, sin suspender y con internet.
+  - Flujo típico: cambio en la nube (se sube solo) → en la PC, doble clic en `Armar APK` (trae lo último y arma).
+  - Tres reglas: un solo lado a la vez; al empezar, traer lo último; al terminar en la PC, subir.
 
 ## Decisiones tomadas (no volver a discutir salvo que el usuario lo pida)
 1. **PWA** (app web instalable). Sin frameworks ni paso de compilación:
