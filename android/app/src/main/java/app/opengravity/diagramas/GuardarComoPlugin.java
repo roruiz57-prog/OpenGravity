@@ -45,7 +45,7 @@ public class GuardarComoPlugin extends Plugin {
             return;
         }
         Uri destino = datosResultado.getData();
-        try (OutputStream salida = getContext().getContentResolver().openOutputStream(destino)) {
+        try (OutputStream salida = getContext().getContentResolver().openOutputStream(destino, "wt")) {
             if (salida == null) throw new IllegalStateException("Android no abrió el archivo");
             salida.write(Base64.decode(call.getString("datos"), Base64.DEFAULT));
         } catch (Exception e) {

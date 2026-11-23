@@ -8,7 +8,7 @@ import sys
 
 from playwright.sync_api import sync_playwright
 
-from comun import URL, abrir, caja, comprobar, descargar, diagrama, guardado, indice, resumen
+from comun import CELULAR, ESCRITORIO, URL, abrir, caja, comprobar, descargar, diagrama, guardado, indice, resumen
 
 
 def migracion(nav):
@@ -90,10 +90,78 @@ def operaciones(nav):
     pagina.close()
 
 
+def subir(pagina, datos, nombre='respaldo.json'):
+    pagina.set_input_files('#archivo', files=[{'name': nombre, 'mimeType': 'application/json', 'buffer': datos}])
+    pagina.wait_for_timeout(300)
+
+
+def respaldo(nav, viewport):
+    primero = diagrama([caja('a', 0, 0, title='PRIMERO')], nombre='Primero')
+    pagina, errores = abrir(nav, primero, viewport=viewport)
+    otro = diagrama([caja('b', 0, 0, title='OTRO')], nombre='Otro')
+    copia_igual = diagrama([caja('a', 0, 0, title='PRIMERO')], nombre='Primero (copia)')
+    pagina.evaluate("""([otro, copia]) => {
+        const ind = JSON.parse(localStorage.getItem('opengravity.biblioteca.v1'));
+        ind.push({ id: 'otro', name: otro.name, updated: 1000 }, { id: 'copia', name: copia.name, updated: 2000 });
+        localStorage.setItem('opengravity.biblioteca.v1', JSON.stringify(ind));
+        localStorage.setItem('opengravity.diagrama.otro', JSON.stringify(otro));
+        localStorage.setItem('opengravity.diagrama.copia', JSON.stringify(copia));
+        localStorage.setItem('opengravity.ia.v1', JSON.stringify({ claveGemini: 'CLAVE-SECRETA-DE-PRUEBA' }));
+    }""", [otro, copia_igual])
+    pagina.reload()
+    pagina.wait_for_timeout(300)
+    pagina.click('#b-menu')  # en el celular el nombre del diagrama no se muestra: se entra por el menú
+    pagina.click('[data-accion="biblioteca"]')
+
+    nombre, datos = descargar(pagina, lambda: pagina.click('[data-bib="respaldar"]'))
+    archivo = json.loads(datos)
+    comprobar(nombre.startswith('OpenGravity-respaldo-') and len(archivo['diagramas']) == 3, f'respaldo: guarda los 3 ({nombre})')
+    comprobar(b'CLAVE-SECRETA' not in datos and b'claveGemini' not in datos, 'respaldo: no incluye las claves de IA')
+
+    subir(pagina, datos)
+    comprobar(len(indice(pagina)) == 3 and '3 ya estaban' in pagina.inner_text('#aviso'), 'recuperar sin cambios: no duplica')
+
+    menu_de(pagina, 'Otro', 'borrar')
+    pagina.click('#modal-si')
+    menu_de(pagina, 'Primero (copia)', 'borrar')
+    pagina.click('#modal-si')
+    subir(pagina, datos)
+    nombres = sorted(x['name'] for x in indice(pagina))
+    comprobar(nombres == ['Otro', 'Primero', 'Primero (copia)'], f'recuperar: vuelven los borrados, aun con igual contenido {nombres}')
+    comprobar(guardado(pagina)['nodes'][0]['title'] == 'PRIMERO', 'recuperar: no cambia el diagrama abierto')
+    recuperado = next(x for x in indice(pagina) if x['name'] == 'Otro')
+    comprobar(recuperado['updated'] == 1000, 'recuperar: conserva la fecha')
+
+    pagina.evaluate("""id => {
+        const d = JSON.parse(localStorage.getItem('opengravity.diagrama.' + id));
+        d.nodes[0].title = 'CAMBIADO';
+        localStorage.setItem('opengravity.diagrama.' + id, JSON.stringify(d));
+    }""", recuperado['id'])
+    subir(pagina, datos)
+    nombres = [x['name'] for x in indice(pagina)]
+    comprobar('Otro (2)' in nombres and len(nombres) == 4, f'mismo nombre y otro contenido: agrega sin pisar {nombres}')
+    comprobar(guardado(pagina, recuperado['id'])['nodes'][0]['title'] == 'CAMBIADO', 'no pisa el que ya estaba')
+    subir(pagina, datos)
+    comprobar(len(indice(pagina)) == 4, 'recuperar otra vez: no vuelve a duplicar')
+
+    subir(pagina, b'{"tipo": "opengravity-respaldo", "diagramas": "roto"}')
+    comprobar(len(indice(pagina)) == 4 and 'no es un diagrama' in pagina.inner_text('#aviso'), 'respaldo roto: avisa y no agrega')
+    parcial = json.dumps({'tipo': 'opengravity-respaldo', 'diagramas': [None, {'name': 'Malo', 'doc': {'nodes': 'x'}}]}).encode()
+    subir(pagina, parcial)
+    comprobar(len(indice(pagina)) == 4 and '2 dañados' in pagina.inner_text('#aviso'), 'entradas dañadas: las cuenta y no las agrega')
+
+    boton = pagina.locator('[data-bib="respaldar"]').bounding_box()
+    comprobar(boton is not None and boton['x'] >= 0 and boton['x'] + boton['width'] <= viewport['width'], 'el botón Respaldar entra en pantalla')
+    comprobar(not errores, f'respaldo: sin errores en la consola {errores}')
+    pagina.close()
+
+
 if __name__ == '__main__':
     with sync_playwright() as p:
         nav = p.chromium.launch()
         migracion(nav)
         operaciones(nav)
+        respaldo(nav, ESCRITORIO)
+        respaldo(nav, CELULAR)
         nav.close()
     sys.exit(resumen())

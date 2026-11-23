@@ -2,7 +2,7 @@
 
 > Leer este archivo al empezar un chat nuevo. Junto con `CLAUDE.md` (decisiones, estructura del
 > código y formato de los diagramas) alcanza para seguir sin la conversación anterior.
-> Última actualización: 20 de noviembre de 2026 (color de varias y contraste en fondos claros).
+> Última actualización: 23 de noviembre de 2026 (respaldo de todos los diagramas).
 
 ## 1. Dónde está todo
 
@@ -23,15 +23,22 @@
   y aparece una línea rosa. Alt en la PC lo desactiva.
 - **Elegir varias** (19/11/2026): Shift + clic en la PC, o el botón "Elegir varias" en el celular. Permite alinear
   (izquierda, centro, derecha, arriba, medio, abajo), repartir parejo (3 o más), mover juntas y borrar.
-- **Color de varias a la vez** (20/11/2026, en la rama de trabajo; **falta publicar en `main`**): con varias elegidas,
+- **Color de varias a la vez** (20/11/2026, publicado en `main` e incluido en el APK de ese día): con varias elegidas,
   el panel tiene "Color del borde y título" y "Relleno" (el relleno va solo a las formas; textos y grupos no tienen).
   Si todas tienen el mismo color, aparece marcado. Se deshace en un paso.
-- **Contraste en fondos claros** (20/11/2026, idem): con fondo claro, los colores que van directo sobre el fondo
+- **Contraste en fondos claros** (20/11/2026, publicado en `main` e incluido en el APK de ese día): con fondo claro, los colores que van directo sobre el fondo
   (textos, grupos, flechas, formas sin relleno) se **oscurecen al dibujarlos** hasta contraste 3:1 (`visible()` en
   `app.js`). El color guardado no cambia: en fondo oscuro se ve el original. Los títulos sobre relleno no se tocan.
 - Fondos: galería de 8, color liso o degradado, textura y estrellas.
 - Exportar a PNG, JPG, WebP, SVG y PDF, con opción de fondo transparente.
 - **Mis diagramas**: varios diagramas guardados en el dispositivo.
+- **Respaldar todos** (23/11/2026, en la rama de trabajo; **falta publicar en `main`, armar el APK y probar en el
+  celular**): Mis diagramas → "Respaldar todos…" guarda todo en un archivo, eligiendo el lugar (Drive incluido) con el
+  "Guardar como". Se recupera con "Abrir archivo…": agrega lo que falta, no pisa ni duplica. No incluye claves de IA.
+  Sin conectar la cuenta de Google (decisión de Rubén). Que Drive aparezca en el cuadro de Android falta confirmarlo.
+- **Copia automática de Android desactivada en el APK** (23/11/2026, `allowBackup=false`), para que las claves de IA no
+  salgan a la cuenta de Google. No borra una copia anterior. **Falta ver si estaba activa en el A22; si lo estaba,
+  rotar las claves de IA que tenía cargadas el APK.**
 - La app **no pierde lo escrito** si Android la cierra: las claves de IA se guardan al pegarlas, se
   reabre el cuadro que estaba abierto y el borrador del pedido se conserva. Hay botón "Pegar" y los campos
   de clave admiten el autocompletado del gestor de contraseñas.
@@ -184,7 +191,7 @@
 
 ## 4. Ideas que el usuario vio y todavía no eligió
 - **Flechas curvas o en ángulo recto**, como en los organigramas.
-- **Respaldo o sincronización con Google Drive**: hoy cada dispositivo tiene su propia lista y se pasan diagramas con Guardar/Abrir archivo `.json`.
+- **Sincronización automática con Google Drive**: el respaldo manual ya existe; la automática exigiría conectar la cuenta.
 - Más plantillas.
 - Botón "Instalar app" dentro del menú.
 
@@ -203,7 +210,7 @@
   en su PC, en la misma rama. Las sesiones en la nube suben también a la rama de trabajo sin preguntar.
 - **Pedir autorización cada vez** antes de copiar a `main`.
   El usuario suele responder "Sí, copialo a main".
-- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v17`).
+- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v18`).
   Si no, el celular sigue mostrando la versión vieja.
 - Después de publicar, recordarle: "cierra la app y ábrela dos veces".
 - Probar en escritorio (1400×860) y celular (360×740) antes de proponer publicar.

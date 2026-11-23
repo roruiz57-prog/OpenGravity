@@ -1372,12 +1372,68 @@
       avisar('No se pudo guardar el archivo');
     }
   }
+  // Respaldo: todos los diagramas en un solo archivo. Solo diagramas: nunca las claves ni los ajustes de IA.
+  const TIPO_RESPALDO = 'opengravity-respaldo';
+  async function guardarRespaldo() {
+    const ind = leerIndice();
+    const diagramas = [];
+    for (const x of ind) {
+      const d = x.id === abiertoId ? doc : leerDiagrama(x.id);
+      if (d) diagramas.push({ name: x.name, updated: x.updated, doc: d });
+    }
+    const ilegibles = ind.length - diagramas.length;
+    const respaldo = { tipo: TIPO_RESPALDO, version: 1, creado: new Date().toISOString(), diagramas };
+    const fecha = new Date().toLocaleDateString('sv');
+    try {
+      const donde = await descargar(new Blob([JSON.stringify(respaldo)], { type: 'application/json' }), `OpenGravity-respaldo-${fecha}.json`);
+      const detalle = ilegibles ? ` (${ilegibles} no se pudieron leer y quedaron afuera)` : '';
+      avisarGuardado(`Respaldo de ${diagramas.length} guardado${detalle}`, donde);
+    } catch (_) {
+      avisar('No se pudo guardar el respaldo');
+    }
+  }
+  // Dos diagramas son "el mismo" si coincide el contenido y el nombre, sin contar el "(2)" que se agrega al repetirse.
+  function huellaDiagrama(d) {
+    const { name, ...contenido } = normalizar(copia(d));
+    return String(name || '').replace(/ \(\d+\)$/, '') + '\n' + JSON.stringify(contenido);
+  }
+  // Agrega lo que falta sin pisar, borrar ni cambiar el diagrama abierto.
+  function importarRespaldo(respaldo) {
+    const existentes = new Set();
+    for (const x of leerIndice()) {
+      const d = x.id === abiertoId ? doc : leerDiagrama(x.id);
+      if (d) existentes.add(huellaDiagrama(d));
+    }
+    let recuperados = 0, yaEstaban = 0, danados = 0, sinEspacio = false;
+    for (const e of respaldo.diagramas) {
+      let d, huella;
+      try {
+        if (!e || !e.doc || !Array.isArray(e.doc.nodes)) throw new Error('formato');
+        d = normalizar(copia({ ...e.doc, name: e.name || e.doc.name || 'Diagrama' }));
+        huella = huellaDiagrama(d);
+      } catch (_) { danados++; continue; }
+      if (existentes.has(huella)) { yaEstaban++; continue; }
+      d.name = nombreLibre(d.name);
+      const id = uid('d');
+      if (!lsSet(PREFIJO_DIAGRAMA + id, JSON.stringify(d))) { sinEspacio = true; break; }
+      const ind = leerIndice();
+      ind.push({ id, name: d.name, updated: Number(e.updated) || Date.now() });
+      if (!guardarIndice(ind)) { lsDel(PREFIJO_DIAGRAMA + id); sinEspacio = true; break; }
+      recuperados++;
+    }
+    if (!biblioteca.hidden) dibujarBiblioteca();
+    let texto = `${recuperados} recuperados, ${yaEstaban} ya estaban`;
+    if (danados) texto += `, ${danados} dañados`;
+    if (sinEspacio) texto += '. Sin espacio: no entraron todos';
+    avisar(texto);
+  }
   $('#archivo').addEventListener('change', async (ev) => {
     const f = ev.target.files && ev.target.files[0];
     ev.target.value = '';
     if (!f) return;
     try {
       const d = JSON.parse(await f.text());
+      if (d && d.tipo === TIPO_RESPALDO && Array.isArray(d.diagramas)) return importarRespaldo(d);
       if (!d || !Array.isArray(d.nodes)) throw new Error('formato');
       if (!d.name) d.name = f.name.replace(/\.diagrama\.json$|\.json$/i, '');
       crearDiagrama(d);
@@ -1829,6 +1885,7 @@
     if (d.bib === 'nuevo') { crearDiagrama(window.PLANTILLAS.blanco); cerrarBiblioteca(); }
     else if (d.bib === 'plantilla') { crearDiagrama(window.PLANTILLAS.arnes); cerrarBiblioteca(); }
     else if (d.bib === 'importar') $('#archivo').click();
+    else if (d.bib === 'respaldar') guardarRespaldo();
     else if (d.abrir) { abrirDiagrama(d.abrir); cerrarBiblioteca(); }
     else if (d.mas) { const m = b.nextElementSibling; m.hidden = !m.hidden; }
     else if (d.renombrar) {
