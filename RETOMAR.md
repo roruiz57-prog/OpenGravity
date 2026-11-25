@@ -29,8 +29,8 @@
 - **Contraste en fondos claros** (20/11/2026, publicado en `main` e incluido en el APK de ese día): con fondo claro, los colores que van directo sobre el fondo
   (textos, grupos, flechas, formas sin relleno) se **oscurecen al dibujarlos** hasta contraste 3:1 (`visible()` en
   `app.js`). El color guardado no cambia: en fondo oscuro se ve el original. Los títulos sobre relleno no se tocan.
-- **Flechas curvas o en ángulo recto** (25/11/2026, en la rama de trabajo; **falta publicar en `main` y armar el
-  APK**): panel de la flecha → "Trazo": Recta, Curva o En ángulo recto (como en los organigramas). Las flechas de
+- **Flechas curvas o en ángulo recto** (25/11/2026, publicado en `main`, `diagramas-v19`; **falta armar el APK
+  y probarlo en el celular**): panel de la flecha → "Trazo": Recta, Curva o En ángulo recto (como en los organigramas). Las flechas de
   antes siguen rectas. La IA también lo elige (ángulo recto para organigramas, curva para ciclos).
   Prueba: `pruebas/prueba_flechas.py`.
 - Fondos: galería de 8, color liso o degradado, textura y estrellas.
