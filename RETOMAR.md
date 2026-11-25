@@ -32,10 +32,10 @@
 - Fondos: galería de 8, color liso o degradado, textura y estrellas.
 - Exportar a PNG, JPG, WebP, SVG y PDF, con opción de fondo transparente.
 - **Mis diagramas**: varios diagramas guardados en el dispositivo.
-- **Respaldar todos** (23/11/2026, en la rama de trabajo y en el APK 1.0.261124.1346; **falta probar en el celular
-  y publicar en `main`**): Mis diagramas → "Respaldar todos…" guarda todo en un archivo, eligiendo el lugar (Drive incluido) con el
+- **Respaldar todos** (23/11/2026; en el APK 1.0.261124.1346, probado en el celular con Drive el 25/11/2026 y
+  publicado en `main` ese día, `diagramas-v18`): Mis diagramas → "Respaldar todos…" guarda todo en un archivo, eligiendo el lugar (Drive incluido) con el
   "Guardar como". Se recupera con "Abrir archivo…": agrega lo que falta, no pisa ni duplica. No incluye claves de IA.
-  Sin conectar la cuenta de Google (decisión de Rubén). Que Drive aparezca en el cuadro de Android falta confirmarlo.
+  Sin conectar la cuenta de Google (decisión de Rubén). Funciona con Drive en el cuadro de Android.
 - **Copia automática de Android desactivada en el APK** (23/11/2026, `allowBackup=false`), para que las claves de IA no
   salgan a la cuenta de Google. No borra una copia anterior. En el A22 estaba activa, así que **el 25/11/2026 se
   rotaron las claves de IA** (Google AI Studio y OpenRouter): cambiadas en la PC con
