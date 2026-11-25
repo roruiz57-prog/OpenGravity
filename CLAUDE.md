@@ -94,7 +94,8 @@ usarse en **Android y Windows** desde una sola base de código.
               "title": "…", "subtitle": "línea1\nlínea2", "color": "#7fe3ff",
               "fill": "#1f78c8", "titleSize": 30, "subSize": 16, "glow": true }],
   "edges": [{ "id": "…", "from": "idNodo", "to": "idNodo", "label": "…",
-              "style": "solid|dashed|dotted", "arrow": "end|start|both|none", "color": "#ffffff" }]
+              "style": "solid|dashed|dotted", "arrow": "end|start|both|none",
+              "route": "straight|curve|elbow", "color": "#ffffff" }]
 }
 ```
 `x, y` es la esquina superior izquierda. Los grupos se dibujan detrás de todo.
@@ -108,6 +109,8 @@ Exportar con "Fondo transparente" (PNG, WebP, SVG) omite el fondo (`svgExportabl
 `iniciarBiblioteca()` migra la clave vieja `opengravity.diagrama.actual.v1`. Deshacer es por diagrama.
 No se sincroniza entre dispositivos: para pasar uno se usa Guardar/Abrir archivo.
 Archivos viejos con `"dashed": true` en flechas se convierten solos a `style` en `normalizar()`.
+Flechas: `route` elige el trazo (`TRAZOS`); sin él, recta. `geometriaArista()` calcula los puntos y
+`caminoArista()` arma el trazo. "elbow" va vertical u horizontal según dónde haya más espacio libre entre las formas.
 
 ## Cómo probarla en la PC
 Necesita un servidor local (el modo sin conexión no funciona abriendo el archivo directo):

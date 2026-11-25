@@ -11,7 +11,7 @@ import urllib.request
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(AQUI)
-PRUEBAS = ['prueba_editor.py', 'prueba_alinear.py', 'prueba_biblioteca.py', 'prueba_ia.py', 'prueba_ia_reintento.py', 'prueba_guardar_como.py', 'prueba_color_contraste.py']
+PRUEBAS = ['prueba_editor.py', 'prueba_alinear.py', 'prueba_biblioteca.py', 'prueba_ia.py', 'prueba_ia_reintento.py', 'prueba_guardar_como.py', 'prueba_color_contraste.py', 'prueba_flechas.py']
 
 
 def servidor_listo():

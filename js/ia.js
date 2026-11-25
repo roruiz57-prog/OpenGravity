@@ -166,7 +166,8 @@ Formato:
                "title": "TÍTULO", "subtitle": "detalle opcional",
                "color": "#hex", "fill": "#hex", "border": "solid" | "dashed" | "dotted" } ],
   "edges": [ { "id": "e1", "from": "id-origen", "to": "id-destino", "label": "opcional",
-               "style": "solid" | "dashed" | "dotted", "arrow": "end" | "start" | "both" | "none", "color": "#hex" } ]
+               "style": "solid" | "dashed" | "dotted", "arrow": "end" | "start" | "both" | "none",
+               "route": "straight" | "curve" | "elbow", "color": "#hex" } ]
 }
 
 Tipos:
@@ -184,6 +185,8 @@ Reglas de diseño:
 - Ordena el flujo de arriba hacia abajo o de izquierda a derecha, de forma prolija.
 - Máximo 25 elementos. Escribe en el mismo idioma que el pedido.
 - Cada "from" y "to" de las flechas debe ser un "id" que exista. Usa "label" para describir la relación cuando ayude.
+- "route" de las flechas: "elbow" (ángulo recto) para organigramas y jerarquías, "curve" para ciclos o
+  flechas que vuelven atrás, "straight" para el resto.
 - ${colores}
 - No incluyas fondo ("bg") ni otros campos.`;
   }

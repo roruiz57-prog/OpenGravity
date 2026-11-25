@@ -29,6 +29,10 @@
 - **Contraste en fondos claros** (20/11/2026, publicado en `main` e incluido en el APK de ese día): con fondo claro, los colores que van directo sobre el fondo
   (textos, grupos, flechas, formas sin relleno) se **oscurecen al dibujarlos** hasta contraste 3:1 (`visible()` en
   `app.js`). El color guardado no cambia: en fondo oscuro se ve el original. Los títulos sobre relleno no se tocan.
+- **Flechas curvas o en ángulo recto** (25/11/2026, en la rama de trabajo; **falta publicar en `main` y armar el
+  APK**): panel de la flecha → "Trazo": Recta, Curva o En ángulo recto (como en los organigramas). Las flechas de
+  antes siguen rectas. La IA también lo elige (ángulo recto para organigramas, curva para ciclos).
+  Prueba: `pruebas/prueba_flechas.py`.
 - Fondos: galería de 8, color liso o degradado, textura y estrellas.
 - Exportar a PNG, JPG, WebP, SVG y PDF, con opción de fondo transparente.
 - **Mis diagramas**: varios diagramas guardados en el dispositivo.
@@ -192,7 +196,6 @@
   Windows (el CMD de `Armar APK` y su cuadro de contraseña).
 
 ## 4. Ideas que el usuario vio y todavía no eligió
-- **Flechas curvas o en ángulo recto**, como en los organigramas.
 - **Sincronización automática con Google Drive**: el respaldo manual ya existe; la automática exigiría conectar la cuenta.
 - Más plantillas.
 - Botón "Instalar app" dentro del menú.
@@ -212,7 +215,7 @@
   en su PC, en la misma rama. Las sesiones en la nube suben también a la rama de trabajo sin preguntar.
 - **Pedir autorización cada vez** antes de copiar a `main`.
   El usuario suele responder "Sí, copialo a main".
-- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v18`).
+- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v19`).
   Si no, el celular sigue mostrando la versión vieja.
 - Después de publicar, recordarle: "cierra la app y ábrela dos veces".
 - Probar en escritorio (1400×860) y celular (360×740) antes de proponer publicar.

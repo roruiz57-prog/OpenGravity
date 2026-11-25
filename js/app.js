@@ -35,6 +35,7 @@
     cylinder: { nombre: 'Cilindro', w: 160, h: 180 }
   };
   const BORDES = { solid: 'Continuo', dashed: 'Rayas', dotted: 'Puntos' };
+  const TRAZOS = { straight: 'Recta', curve: 'Curva', elbow: 'En ángulo recto' };
   const tapaCilindro = (h) => Math.min(h * 0.15, 20);
 
   // Contorno SVG de una forma dentro del rectángulo (x, y, w, h); `attrs` son los atributos de estilo.
@@ -154,6 +155,7 @@
     out.edges = (Array.isArray(out.edges) ? out.edges : []).map((e) => {
       const m = Object.assign({ label: '', arrow: 'end', color: '#ffffff' }, e, { id: e.id || uid('e') });
       if (!BORDES[m.style]) m.style = m.dashed ? 'dashed' : 'solid'; // archivos viejos usaban "dashed"
+      if (!TRAZOS[m.route]) m.route = 'straight';
       delete m.dashed;
       return m;
     });
@@ -395,14 +397,74 @@
     const lim = Math.max(0, Math.min(a.w, a.h, b.w, b.h) / 2 - 6);
     const o = Math.max(-lim, Math.min(lim, off || 0));
     const d = { x: (cb.x - ca.x) / L, y: (cb.y - ca.y) / L };
+    const hueco = 6;
+    const unidad = (v) => { const l = Math.hypot(v.x, v.y) || 1; return { x: v.x / l, y: v.y / l }; };
+    // Sale de la forma "a" o entra a la "b" desde p en dirección dir, dejando un hueco con el borde.
+    const borde = (n, p, dir) => { const s = salidaForma(n, p, dir); return { x: s.x + dir.x * hueco, y: s.y + dir.y * hueco }; };
+
+    if (e.route === 'curve') {
+      // Curva hacia un costado; las flechas del mismo par se separan curvándose distinto.
+      const curva = L * 0.22 + o * 2;
+      const ctrl = { x: (ca.x + cb.x) / 2 + perp.x * curva, y: (ca.y + cb.y) / 2 + perp.y * curva };
+      const ini = borde(a, ca, unidad({ x: ctrl.x - ca.x, y: ctrl.y - ca.y }));
+      const fin = borde(b, cb, unidad({ x: ctrl.x - cb.x, y: ctrl.y - cb.y }));
+      const signo = curva < 0 ? -1 : 1;
+      return {
+        ini, fin, ctrl, medios: [],
+        dirIni: unidad({ x: ctrl.x - ini.x, y: ctrl.y - ini.y }), dirFin: unidad({ x: fin.x - ctrl.x, y: fin.y - ctrl.y }),
+        etiqueta: { x: 0.25 * ini.x + 0.5 * ctrl.x + 0.25 * fin.x, y: 0.25 * ini.y + 0.5 * ctrl.y + 0.25 * fin.y },
+        normal: { x: perp.x * signo, y: perp.y * signo }
+      };
+    }
+
+    if (e.route === 'elbow') {
+      // En ángulo recto, como en los organigramas: sale y entra por la cara que mira al otro elemento.
+      // Vertical si el espacio libre entre las dos es mayor arriba/abajo que a los costados.
+      const libreY = Math.max(b.y - (a.y + a.h), a.y - (b.y + b.h));
+      const libreX = Math.max(b.x - (a.x + a.w), a.x - (b.x + b.w));
+      const vertical = libreY >= libreX;
+      if (vertical) {
+        const s = cb.y > ca.y ? 1 : -1;
+        const ini = borde(a, { x: ca.x + o, y: ca.y }, { x: 0, y: s });
+        const fin = borde(b, { x: cb.x + o, y: cb.y }, { x: 0, y: -s });
+        const recta = Math.abs(ini.x - fin.x) < 1;
+        const medioY = (ini.y + fin.y) / 2;
+        return {
+          ini, fin, medios: recta ? [] : [{ x: ini.x, y: medioY }, { x: fin.x, y: medioY }],
+          dirIni: { x: 0, y: s }, dirFin: { x: 0, y: s },
+          etiqueta: recta ? { x: ini.x, y: medioY } : { x: (ini.x + fin.x) / 2, y: medioY },
+          normal: recta ? { x: 1, y: 0 } : { x: 0, y: -1 }
+        };
+      }
+      const s = cb.x > ca.x ? 1 : -1;
+      const ini = borde(a, { x: ca.x, y: ca.y + o }, { x: s, y: 0 });
+      const fin = borde(b, { x: cb.x, y: cb.y + o }, { x: -s, y: 0 });
+      const recta = Math.abs(ini.y - fin.y) < 1;
+      const medioX = (ini.x + fin.x) / 2;
+      return {
+        ini, fin, medios: recta ? [] : [{ x: medioX, y: ini.y }, { x: medioX, y: fin.y }],
+        dirIni: { x: s, y: 0 }, dirFin: { x: s, y: 0 },
+        etiqueta: recta ? { x: (ini.x + fin.x) / 2, y: ini.y } : { x: medioX, y: (ini.y + fin.y) / 2 },
+        normal: recta ? { x: 0, y: -1 } : { x: 1, y: 0 }
+      };
+    }
+
     const sa = { x: ca.x + perp.x * o, y: ca.y + perp.y * o };
     const sb = { x: cb.x + perp.x * o, y: cb.y + perp.y * o };
-    const hueco = 6;
-    let ini = salidaForma(a, sa, d);
-    let fin = salidaForma(b, sb, { x: -d.x, y: -d.y });
-    ini = { x: ini.x + d.x * hueco, y: ini.y + d.y * hueco };
-    fin = { x: fin.x - d.x * hueco, y: fin.y - d.y * hueco };
-    return { ini, fin, d, perp, o };
+    const ini = borde(a, sa, d);
+    const fin = borde(b, sb, { x: -d.x, y: -d.y });
+    const signo = o < 0 ? -1 : 1;
+    return {
+      ini, fin, medios: [], dirIni: d, dirFin: d,
+      etiqueta: { x: (ini.x + fin.x) / 2, y: (ini.y + fin.y) / 2 },
+      normal: { x: perp.x * signo, y: perp.y * signo }
+    };
+  }
+
+  // Trazo SVG de la flecha, entre ini y fin (que pueden estar recortados por las puntas).
+  function caminoArista(g, ini, fin) {
+    if (g.ctrl) return `M${ini.x},${ini.y} Q${g.ctrl.x},${g.ctrl.y} ${fin.x},${fin.y}`;
+    return 'M' + [ini, ...g.medios, fin].map((p) => `${p.x},${p.y}`).join(' L');
   }
 
   // ---------- Dibujo ----------
@@ -485,7 +547,7 @@
   function dibujarArista(e, off, paraExportar) {
     const g = geometriaArista(e, off);
     if (!g) return '';
-    const { d, perp } = g;
+    const { dirIni, dirFin } = g;
     let { ini, fin } = g;
     const flechaFin = e.arrow === 'end' || e.arrow === 'both';
     const flechaIni = e.arrow === 'start' || e.arrow === 'both';
@@ -497,17 +559,16 @@
       const px = -dir.y, py = dir.x;
       return `<polygon points="${tip.x},${tip.y} ${bx + px * ancho},${by + py * ancho} ${bx - px * ancho},${by - py * ancho}" fill="${colorFlecha}"/>`;
     };
-    if (flechaFin) { puntas.push(punta(fin, d)); fin = { x: fin.x - d.x * largo * 0.8, y: fin.y - d.y * largo * 0.8 }; }
-    if (flechaIni) { const r = { x: -d.x, y: -d.y }; puntas.push(punta(ini, r)); ini = { x: ini.x + d.x * largo * 0.8, y: ini.y + d.y * largo * 0.8 }; }
-    const trazo = `M${ini.x},${ini.y} L${fin.x},${fin.y}`;
+    if (flechaFin) { puntas.push(punta(fin, dirFin)); fin = { x: fin.x - dirFin.x * largo * 0.8, y: fin.y - dirFin.y * largo * 0.8 }; }
+    if (flechaIni) { const r = { x: -dirIni.x, y: -dirIni.y }; puntas.push(punta(ini, r)); ini = { x: ini.x + dirIni.x * largo * 0.8, y: ini.y + dirIni.y * largo * 0.8 }; }
+    const trazo = caminoArista(g, ini, fin);
     const guion = e.style === 'dashed' ? ' stroke-dasharray="10 8"' : e.style === 'dotted' ? ' stroke-dasharray="0.1 7"' : '';
     const seleccionada = !paraExportar && sel && sel.kind === 'edge' && sel.id === e.id;
 
     let etiqueta = '';
     if (e.label) {
-      const signo = g.o < 0 ? -1 : 1;
-      const m = { x: (g.ini.x + g.fin.x) / 2, y: (g.ini.y + g.fin.y) / 2 };
-      const nx = perp.x * signo, ny = perp.y * signo;
+      const m = g.etiqueta;
+      const nx = g.normal.x, ny = g.normal.y;
       let ancla = 'middle', lx = m.x + nx * 16, ly = m.y + ny * 16 + 5;
       if (Math.abs(nx) > 0.5) { ancla = nx > 0 ? 'start' : 'end'; lx = m.x + nx * 12; ly = m.y + ny * 12 + 5; }
       else if (ny < 0) { ly = m.y + ny * 16; }
@@ -516,10 +577,10 @@
     }
     return `<g>
       ${seleccionada ? `<path d="${trazo}" stroke="#7fe3ff" stroke-width="12" opacity=".35" stroke-linecap="round" fill="none"/>` : ''}
-      <path d="${trazo}" stroke="${colorFlecha}" stroke-width="3" stroke-linecap="round" fill="none"${guion}/>
+      <path d="${trazo}" stroke="${colorFlecha}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"${guion}/>
       ${puntas.join('')}
       ${etiqueta}
-      ${paraExportar ? '' : `<path d="M${g.ini.x},${g.ini.y} L${g.fin.x},${g.fin.y}" stroke="transparent" stroke-width="20" fill="none" data-edge="${e.id}"/>`}
+      ${paraExportar ? '' : `<path d="${caminoArista(g, g.ini, g.fin)}" stroke="transparent" stroke-width="20" fill="none" data-edge="${e.id}"/>`}
     </g>`;
   }
 
@@ -1049,6 +1110,8 @@
       if (!e) { sel = null; return dibujarPanel(); }
       h += `<h2>Flecha<button class="cerrar" id="p-cerrar" title="Cerrar">×</button></h2>
         <div class="campo"><label for="p-etiqueta">Etiqueta</label><input type="text" id="p-etiqueta" value="${esc(e.label)}" placeholder="por ejemplo: escribe"></div>
+        <div class="campo"><label for="p-trazo">Trazo</label><select id="p-trazo">
+          ${Object.entries(TRAZOS).map(([k, v]) => `<option value="${k}" ${e.route === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
         <div class="fila">
           <div class="campo" style="flex:1"><label for="p-linea">Línea</label><select id="p-linea">
             <option value="solid" ${e.style === 'solid' ? 'selected' : ''}>Continua</option>
@@ -1148,6 +1211,7 @@
     on('p-forma', 'change', (ev) => { objetivo().shape = ev.target.value; confirmarCambio(); dibujar(); });
     on('p-borde', 'change', (ev) => { objetivo().border = ev.target.value; confirmarCambio(); dibujar(); });
     on('p-puntas', 'change', (ev) => { objetivo().arrow = ev.target.value; confirmarCambio(); dibujar(); });
+    on('p-trazo', 'change', (ev) => { objetivo().route = ev.target.value; confirmarCambio(); dibujar(); });
     on('p-tipo', 'change', (ev) => {
       const n = objetivo();
       n.type = ev.target.value;
@@ -1599,6 +1663,7 @@
       .map((e, i) => ({
         id: `e${i}-${uid('')}`, from: String(e.from), to: String(e.to), label: String(e.label ?? ''),
         style: BORDES[e.style] ? e.style : e.dashed ? 'dashed' : 'solid',
+        route: TRAZOS[e.route] ? e.route : 'straight',
         arrow: ['end', 'start', 'both', 'none'].includes(e.arrow) ? e.arrow : 'end',
         color: typeof e.color === 'string' && e.color ? e.color : (claro ? TINTA_OSCURA : '#ffffff')
       }));
