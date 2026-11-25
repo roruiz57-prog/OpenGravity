@@ -2,7 +2,7 @@
 
 > Leer este archivo al empezar un chat nuevo. Junto con `CLAUDE.md` (decisiones, estructura del
 > código y formato de los diagramas) alcanza para seguir sin la conversación anterior.
-> Última actualización: 23 de noviembre de 2026 (respaldo de todos los diagramas).
+> Última actualización: 25 de noviembre de 2026 (rotación de claves de IA).
 
 ## 1. Dónde está todo
 
@@ -32,13 +32,15 @@
 - Fondos: galería de 8, color liso o degradado, textura y estrellas.
 - Exportar a PNG, JPG, WebP, SVG y PDF, con opción de fondo transparente.
 - **Mis diagramas**: varios diagramas guardados en el dispositivo.
-- **Respaldar todos** (23/11/2026, en la rama de trabajo; **falta publicar en `main`, armar el APK y probar en el
-  celular**): Mis diagramas → "Respaldar todos…" guarda todo en un archivo, eligiendo el lugar (Drive incluido) con el
+- **Respaldar todos** (23/11/2026, en la rama de trabajo y en el APK 1.0.261124.1346; **falta probar en el celular
+  y publicar en `main`**): Mis diagramas → "Respaldar todos…" guarda todo en un archivo, eligiendo el lugar (Drive incluido) con el
   "Guardar como". Se recupera con "Abrir archivo…": agrega lo que falta, no pisa ni duplica. No incluye claves de IA.
   Sin conectar la cuenta de Google (decisión de Rubén). Que Drive aparezca en el cuadro de Android falta confirmarlo.
 - **Copia automática de Android desactivada en el APK** (23/11/2026, `allowBackup=false`), para que las claves de IA no
-  salgan a la cuenta de Google. No borra una copia anterior. **Falta ver si estaba activa en el A22; si lo estaba,
-  rotar las claves de IA que tenía cargadas el APK.**
+  salgan a la cuenta de Google. No borra una copia anterior. En el A22 estaba activa, así que **el 25/11/2026 se
+  rotaron las claves de IA** (Google AI Studio y OpenRouter): cambiadas en la PC con
+  `D:\VibeCoding\Herramientas\Cambiar clave de IA.cmd`, en el teléfono a mano (Transcripciones, Tareas y Finanzas y
+  OpenGravity), claves viejas borradas y KeePass actualizado. Hecho.
 - La app **no pierde lo escrito** si Android la cierra: las claves de IA se guardan al pegarlas, se
   reabre el cuadro que estaba abierto y el borrador del pedido se conserva. Hay botón "Pegar" y los campos
   de clave admiten el autocompletado del gestor de contraseñas.
