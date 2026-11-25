@@ -1992,7 +1992,23 @@
     }
   });
 
+  // Versión al pie del menú: en el APK, fecha y hora del armado; en la web, el número de CACHE de sw.js.
+  function mostrarVersion() {
+    const el = $('#version-app');
+    const poner = (t) => { el.textContent = t; el.hidden = false; };
+    const m = /^1\.0\.(\d\d)(\d\d)(\d\d)\.(\d\d)(\d\d)$/.exec(window.VERSION_APK || '');
+    if (m) return poner(`Versión: APK del ${m[3]}/${m[2]}/20${m[1]} ${m[4]}:${m[5]}`);
+    if (enAPK) return poner('Versión: APK de prueba');
+    if (!('caches' in window) || !('serviceWorker' in navigator)) return;
+    // En la primera visita la copia sin conexión todavía no existe: se espera a que quede lista.
+    navigator.serviceWorker.ready.then(() => caches.keys()).then((claves) => {
+      const n = Math.max(0, ...claves.map((k) => +(/^diagramas-v(\d+)$/.exec(k) || [])[1] || 0));
+      if (n) poner(`Versión web ${n}`);
+    }).catch(() => {});
+  }
+
   // ---------- Inicio ----------
+  mostrarVersion();
   iniciarBiblioteca();
   actualizarBotones();
   restaurarUI();

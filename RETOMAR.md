@@ -29,10 +29,15 @@
 - **Contraste en fondos claros** (20/11/2026, publicado en `main` e incluido en el APK de ese día): con fondo claro, los colores que van directo sobre el fondo
   (textos, grupos, flechas, formas sin relleno) se **oscurecen al dibujarlos** hasta contraste 3:1 (`visible()` en
   `app.js`). El color guardado no cambia: en fondo oscuro se ve el original. Los títulos sobre relleno no se tocan.
-- **Flechas curvas o en ángulo recto** (25/11/2026, publicado en `main`, `diagramas-v19`; **falta armar el APK
-  y probarlo en el celular**): panel de la flecha → "Trazo": Recta, Curva o En ángulo recto (como en los organigramas). Las flechas de
+- **Flechas curvas o en ángulo recto** (25/11/2026, publicado en `main`, `diagramas-v19`; en el APK armado ese
+  día; falta probarlo en el celular): panel de la flecha → "Trazo": Recta, Curva o En ángulo recto (como en los organigramas). Las flechas de
   antes siguen rectas. La IA también lo elige (ángulo recto para organigramas, curva para ciclos).
   Prueba: `pruebas/prueba_flechas.py`.
+- **Versión a la vista** (25/11/2026, en la rama de trabajo; **falta publicar en `main`, armar el APK y probarlo**):
+  al pie del menú dice "Versión: APK del 25/11/2026 15:30" (fecha y hora del armado) o "Versión web 20" (el número de
+  `CACHE`). El APK se llama `OpenGravity DD-MM-AAAA HH.mm.apk`, con la misma fecha; `Armar APK` deja solo el último en
+  `D:\VibeCoding\Diagramas multiplataforma\APK` y en `G:\Mi unidad\OpenGravity` (no toca `OpenGravity-prueba.apk`).
+  En Ajustes de Android la misma versión figura como `1.0.AAMMDD.HHmm`. Prueba: `pruebas/prueba_version.py`.
 - Fondos: galería de 8, color liso o degradado, textura y estrellas.
 - Exportar a PNG, JPG, WebP, SVG y PDF, con opción de fondo transparente.
 - **Mis diagramas**: varios diagramas guardados en el dispositivo.
@@ -215,7 +220,7 @@
   en su PC, en la misma rama. Las sesiones en la nube suben también a la rama de trabajo sin preguntar.
 - **Pedir autorización cada vez** antes de copiar a `main`.
   El usuario suele responder "Sí, copialo a main".
-- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v19`).
+- En cada cambio a los archivos de la app, **subir la versión de `CACHE` en `sw.js`** (hoy `diagramas-v20`).
   Si no, el celular sigue mostrando la versión vieja.
 - Después de publicar, recordarle: "cierra la app y ábrela dos veces".
 - Probar en escritorio (1400×860) y celular (360×740) antes de proponer publicar.

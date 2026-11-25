@@ -220,6 +220,7 @@ button { font: inherit; color: inherit; }
 }
 .menu button:hover { background: var(--superficie-2); }
 .menu hr { border: 0; border-top: 1px solid var(--borde); margin: 4px 6px; width: auto; }
+.menu .version { margin: 6px 12px 4px; font-size: 12px; opacity: .6; }
 
 /* ---------- Selector de formas ---------- */
 .formas {

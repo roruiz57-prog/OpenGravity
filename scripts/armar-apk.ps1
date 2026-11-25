@@ -137,14 +137,21 @@ try {
 
     $apk = Join-Path $repo 'android\app\build\outputs\apk\release\app-release.apk'
     if (-not (Test-Path $apk)) { throw 'No se genero un APK firmado' }
+    # El nombre lleva la fecha y hora del armado, la misma que muestra la app al pie del menu.
+    # Se deja solo el ultimo APK definitivo en cada carpeta (el de prueba, OpenGravity-prueba.apk, no se toca).
+    $nombre = 'OpenGravity ' + $ahora.ToString('dd-MM-yyyy HH.mm') + '.apk'
+    $viejos = '^OpenGravity( \d\d-\d\d-\d{4} \d\d\.\d\d)?\.apk$'
     New-Item -ItemType Directory -Force $salida | Out-Null
-    $destino = Join-Path $salida 'OpenGravity.apk'
+    Get-ChildItem $salida -Filter 'OpenGravity*.apk' | Where-Object { $_.Name -match $viejos } | Remove-Item -Force
+    $destino = Join-Path $salida $nombre
     Copy-Item $apk $destino -Force
     Write-Host ''
-    Write-Host "APK listo: $destino  (version $env:VERSION_APP)" -ForegroundColor Green
+    Write-Host "APK listo: $destino" -ForegroundColor Green
+    Write-Host ("En la app, al pie del menu, va a decir: Version: APK del " + $ahora.ToString('dd/MM/yyyy HH:mm')) -ForegroundColor Green
     if (Test-Path $drive) {
-        Copy-Item $apk (Join-Path $drive 'OpenGravity.apk') -Force
-        Write-Host "Copiado a Google Drive: $drive\OpenGravity.apk (puede tardar un minuto en sincronizar)" -ForegroundColor Green
+        Get-ChildItem $drive -Filter 'OpenGravity*.apk' | Where-Object { $_.Name -match $viejos } | Remove-Item -Force
+        Copy-Item $apk (Join-Path $drive $nombre) -Force
+        Write-Host "Copiado a Google Drive: $drive\$nombre (puede tardar un minuto en sincronizar)" -ForegroundColor Green
     } else {
         Write-Host "No encontre la carpeta de Drive ($drive): copia el APK a mano." -ForegroundColor Yellow
     }

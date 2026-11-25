@@ -1,8 +1,8 @@
 // Modo sin conexión: primero intenta la red (para ver siempre la última versión)
 // y, si no hay internet, usa la copia guardada.
-const CACHE = 'diagramas-v19';
+const CACHE = 'diagramas-v20';
 const ARCHIVOS = [
-  './', './index.html', './css/app.css', './js/app.js', './js/plantillas.js', './js/ia.js',
+  './', './index.html', './css/app.css', './js/app.js', './js/version.js', './js/plantillas.js', './js/ia.js',
   './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png'
 ];
 
