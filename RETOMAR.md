@@ -33,7 +33,7 @@
   día; falta probarlo en el celular): panel de la flecha → "Trazo": Recta, Curva o En ángulo recto (como en los organigramas). Las flechas de
   antes siguen rectas. La IA también lo elige (ángulo recto para organigramas, curva para ciclos).
   Prueba: `pruebas/prueba_flechas.py`.
-- **Versión a la vista** (25/11/2026, en la rama de trabajo; **falta publicar en `main`, armar el APK y probarlo**):
+- **Versión a la vista** (25/11/2026, publicada en `main` como v20; **falta armar el APK y probarlo**):
   al pie del menú dice "Versión: APK del 25/11/2026 15:30" (fecha y hora del armado) o "Versión web 20" (el número de
   `CACHE`). El APK se llama `OpenGravity DD-MM-AAAA HH.mm.apk`, con la misma fecha; `Armar APK` deja solo el último en
   `D:\VibeCoding\Diagramas multiplataforma\APK` y en `G:\Mi unidad\OpenGravity` (no toca `OpenGravity-prueba.apk`).
